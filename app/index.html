@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BlinkSense — Live Blink Monitor</title>
+  <meta name="description" content="Privacy-first, on-device blink-rate monitor for desk-docked screen workers. 100% in-browser — nothing ever leaves your device." />
+  <meta name="theme-color" content="#F2F2F7" />
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="BlinkSense" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="app-header">
+    <div class="shell app-header-inner">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 12C2 12 6 5 12 5C18 5 22 12 22 12C22 12 18 19 12 19C6 19 2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
+        Blink<span>Sense</span>
+      </span>
+      <span class="app-header-tag">Web</span>
+    </div>
+  </header>
+
+  <main id="main" class="shell app-main">
+
+    <section class="privacy-banner" role="note" aria-label="Privacy notice">
+      <strong>100% on-device</strong> — video never leaves your browser. No frames or biometric data are uploaded, stored remotely, or shared.
+    </section>
+
+    <section class="camera-card card" aria-labelledby="camera-heading">
+      <div class="camera-card-head">
+        <h2 id="camera-heading">Camera</h2>
+        <span id="camera-status" class="status-pill" role="status" aria-live="polite">Not started</span>
+      </div>
+
+      <div class="camera-stage">
+        <video id="preview" class="preview" autoplay muted playsinline aria-label="Mirrored live camera preview"></video>
+        <div id="camera-overlay-msg" class="camera-overlay-msg" hidden></div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="start-btn" class="button" type="button">Start monitoring</button>
+        <button id="stop-btn" class="button button-outline" type="button" hidden>Stop</button>
+        <button id="retry-btn" class="button button-outline" type="button" hidden>Retry model load</button>
+      </div>
+      <p id="model-load-msg" class="fine-print" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="dashboard-grid">
+      <div class="card gauge-card" aria-labelledby="gauge-heading">
+        <h2 id="gauge-heading" class="sr-only">Blink rate</h2>
+        <div class="bpm-gauge" id="bpm-gauge">
+          <svg class="bpm-gauge-ring" viewBox="0 0 140 140" aria-hidden="true">
+            <circle class="bpm-gauge-track" cx="70" cy="70" r="60"/>
+            <circle id="gauge-fill" class="bpm-gauge-fill" cx="70" cy="70" r="60"/>
+          </svg>
+          <div class="bpm-gauge-readout">
+            <strong id="bpm-value">--</strong>
+            <small>blinks / min</small>
+          </div>
+        </div>
+        <div class="bpm-status">
+          <span id="zone-badge" class="zone-badge zone-healthy">Waiting for data</span>
+        </div>
+      </div>
+
+      <div class="card stats-card" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" class="sr-only">Session stats</h2>
+        <dl class="stat-row">
+          <div>
+            <dt>Session</dt>
+            <dd id="stat-timer">00:00</dd>
+          </div>
+          <div>
+            <dt>Blinks</dt>
+            <dd id="stat-blinks">0</dd>
+          </div>
+          <div>
+            <dt>Alerts</dt>
+            <dd id="stat-alerts">0</dd>
+          </div>
+        </dl>
+
+        <h3 class="chips-label" id="chips-label">Session type</h3>
+        <div class="session-chips" role="group" aria-labelledby="chips-label">
+          <button class="chip is-active" type="button" data-category="Work" aria-pressed="true">Work</button>
+          <button class="chip" type="button" data-category="TV" aria-pressed="false">TV</button>
+          <button class="chip" type="button" data-category="Reading" aria-pressed="false">Reading</button>
+          <button class="chip" type="button" data-category="Gaming" aria-pressed="false">Gaming</button>
+          <button class="chip" type="button" data-category="Other" aria-pressed="false">Other</button>
+        </div>
+
+        <div class="docked-row">
+          <div class="docked-copy">
+            <strong>Docked Mode</strong>
+            <p>Keeps your display awake while this tab is visible. Screen Wake Lock only works while the window is in the foreground.</p>
+          </div>
+          <button id="wake-toggle" class="switch" type="button" role="switch" aria-checked="false" aria-label="Toggle Docked Mode">
+            <span class="switch-knob"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card history-card" aria-labelledby="history-heading">
+      <div class="history-head">
+        <h2 id="history-heading">History</h2>
+        <button id="clear-history-btn" class="button-small button-outline" type="button">Clear history</button>
+      </div>
+      <div id="history-chart" class="history-chart" role="img" aria-label="Bar chart of average blink rate per past session"></div>
+      <ul id="history-list" class="history-list"></ul>
+      <p id="history-empty" class="fine-print">No sessions yet. Start monitoring to build your history.</p>
+    </section>
+
+    <section class="card disclaimer-card">
+      <h2>Not a medical device</h2>
+      <p>BlinkSense is a wellness-awareness tool that estimates blink rate from your camera feed to encourage healthy screen breaks. It is not intended to diagnose, treat, or monitor any medical condition. If you have concerns about your eyes or vision, consult an eye-care professional.</p>
+      <p>All processing happens locally in your browser using on-device machine learning. Camera frames are never transmitted, recorded, or sent to any server.</p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p class="shell fine-print">BlinkSense Web — on-device only. No data leaves your browser.</p>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <strong id="toast-title"></strong>
+    <span id="toast-body"></span>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
