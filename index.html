@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="BlinkSense helps desk-docked screen workers become more aware of reduced blinking during focused screen time." />
-    <meta name="theme-color" content="#07131f" />
-    <title>BlinkSense — A gentler way to work at your screen</title>
+    <meta name="description" content="BlinkSense is a privacy-first, on-device blink-rate dashboard for desk-docked screen work — real-time BPM, alert zones, session history, and Docked Mode on macOS, Windows, Android and iOS." />
+    <meta name="theme-color" content="#F2F2F7" />
+    <title>BlinkSense — Real-time blink-rate awareness, on-device</title>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -17,7 +17,9 @@
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav"><span class="sr-only">Toggle navigation</span><i></i><i></i></button>
         <nav id="primary-nav" class="primary-nav" aria-label="Primary navigation">
-          <a href="#how-it-works">How it works</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#features">Features</a>
+          <a href="#platforms">Platforms</a>
           <a href="#privacy">Privacy</a>
           <a href="#device-test-builds">Test builds</a>
           <a href="#faq">FAQ</a>
@@ -30,68 +32,199 @@
       <section id="top" class="hero">
         <div class="shell hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow"><span></span> Built for focused screen work</p>
-            <h1>Stay present.<br /><em>Even between blinks.</em></h1>
-            <p class="hero-lede">BlinkSense is a quiet, on-device companion that helps desk-docked screen workers notice when deep focus may be changing their natural blinking rhythm.</p>
+            <p class="eyebrow"><span></span> On-device blink tracking</p>
+            <h1>Know your blink rate.<br />Not your data.</h1>
+            <p class="hero-lede">BlinkSense watches your blink-per-minute rate in real time while you work, and gives you a gentle nudge when it drops into a low or critical zone — using the front camera you already have, processed entirely on-device.</p>
             <div class="hero-actions">
               <button class="button js-early-access" type="button">Request early access <span aria-hidden="true">→</span></button>
-              <a class="text-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
+              <a class="text-link" href="#dashboard">See the dashboard <span aria-hidden="true">↓</span></a>
             </div>
-            <p class="fine-print">Awareness, not medical advice. BlinkSense does not diagnose or treat any condition.</p>
+            <p class="fine-print">BlinkSense is an awareness tool, not a medical device. It does not diagnose, treat, cure, or prevent any condition.</p>
           </div>
-          <div class="hero-visual reveal" role="img" aria-label="An abstract depiction of BlinkSense awareness during screen work">
-            <div class="orb orb-one"></div><div class="orb orb-two"></div>
-            <div class="screen-card">
-              <div class="screen-top"><span></span><span></span><span></span><b>Focus session</b></div>
-              <div class="screen-lines"><i></i><i></i><i></i><i></i><i></i></div>
-              <div class="awareness-card"><div class="pulse"><span></span></div><div><small>Gentle awareness</small><strong>Take a natural pause</strong></div></div>
+
+          <div class="hero-visual reveal">
+            <div class="app-mock" id="dashboard" aria-label="BlinkSense live session dashboard, demo view">
+              <div class="app-mock-bar">
+                <span class="dot dot-critical" aria-hidden="true"></span>
+                <span class="dot dot-low" aria-hidden="true"></span>
+                <span class="dot dot-healthy" aria-hidden="true"></span>
+                <b>BlinkSense — Session</b>
+              </div>
+              <div class="app-mock-body">
+                <div class="bpm-gauge" role="img" aria-label="Live blink rate gauge">
+                  <svg viewBox="0 0 140 140" class="bpm-gauge-ring" aria-hidden="true">
+                    <circle cx="70" cy="70" r="60" class="bpm-gauge-track" />
+                    <circle cx="70" cy="70" r="60" class="bpm-gauge-fill" id="bpmRing" />
+                  </svg>
+                  <div class="bpm-gauge-readout">
+                    <strong id="bpmValue">17</strong>
+                    <small>blinks / min</small>
+                  </div>
+                </div>
+                <div class="bpm-status">
+                  <span class="zone-badge zone-healthy" id="zoneBadge">Healthy</span>
+                  <p id="zoneNote">Blink rate is in a comfortable range for this session.</p>
+                </div>
+
+                <dl class="stat-row">
+                  <div><dt>Duration</dt><dd>42:18</dd></div>
+                  <div><dt>Blinks</dt><dd id="blinkCount">712</dd></div>
+                  <div><dt>Last blink</dt><dd id="lastBlink">1s ago</dd></div>
+                </dl>
+
+                <div class="session-chips" role="group" aria-label="Session category">
+                  <button type="button" class="chip is-active" aria-pressed="true">Work</button>
+                  <button type="button" class="chip" aria-pressed="false">TV</button>
+                  <button type="button" class="chip" aria-pressed="false">Reading</button>
+                  <button type="button" class="chip" aria-pressed="false">Gaming</button>
+                  <button type="button" class="chip" aria-pressed="false">Other</button>
+                </div>
+              </div>
             </div>
-            <div class="metric-card"><span class="metric-mark">⌁</span><span><small>Designed for</small><strong>your workday</strong></span></div>
-            <p class="visual-caption">Less interruption. More awareness.</p>
+
+            <div class="floating-card docked-card" aria-hidden="true">
+              <span class="floating-icon">◐</span>
+              <div><small>Docked Mode</small><strong>Keep-awake active</strong></div>
+            </div>
+            <p class="visual-caption">Live demo view — not connected to a camera.</p>
           </div>
         </div>
       </section>
 
       <section class="statement section">
         <div class="shell statement-grid reveal">
-          <p class="eyebrow"><span></span> The screen-work reality</p>
-          <div><h2>When focus deepens, blinking can fade into the background.</h2><p>Reading, designing, analyzing, and meeting on screen can make us blink less often than we normally do. It is an easy pattern to miss—especially when the work matters.</p></div>
+          <p class="eyebrow"><span></span> Why blink rate</p>
+          <div><h2>Deep focus quietly drops your blink rate — and you won't notice until your eyes do.</h2><p>Reading, coding, designing, and meetings on screen can cut blink rate well below its resting baseline. BlinkSense keeps a private, real-time readout of that rate so a drop is visible before it becomes discomfort.</p></div>
         </div>
       </section>
 
       <section id="how-it-works" class="section how">
         <div class="shell">
-          <div class="section-heading reveal"><p class="eyebrow"><span></span> How it works</p><h2>A little more awareness, designed to stay out of your way.</h2></div>
+          <div class="section-heading reveal"><p class="eyebrow"><span></span> How the detection pipeline works</p><h2>From camera frame to alert, entirely on-device.</h2></div>
           <ol class="steps">
-            <li class="reveal"><span class="step-number">01</span><div class="step-icon eye-icon" aria-hidden="true"></div><h3>Notices patterns</h3><p>During a work session, BlinkSense observes broad blink-pattern signals from your device camera.</p></li>
-            <li class="reveal"><span class="step-number">02</span><div class="step-icon spark-icon" aria-hidden="true">✦</div><h3>Offers a gentle cue</h3><p>When your pattern appears reduced, it can offer a subtle moment of awareness—on your terms.</p></li>
-            <li class="reveal"><span class="step-number">03</span><div class="step-icon chart-icon" aria-hidden="true"><i></i><i></i><i></i></div><h3>Helps you reflect</h3><p>See simple, private trends over time and find the rhythm that supports your workday.</p></li>
+            <li class="reveal"><span class="step-number">01</span><div class="step-icon eye-icon" aria-hidden="true"></div><h3>Capture &amp; landmarks</h3><p>The front camera feeds a local vision pipeline — Apple Vision, ML Kit, or ARKit TrueDepth blend shapes — that finds your eyes every frame.</p></li>
+            <li class="reveal"><span class="step-number">02</span><div class="step-icon spark-icon" aria-hidden="true">÷</div><h3>EAR &amp; calibration</h3><p>Left and right Eye Aspect Ratio is computed against its own baseline, calibrated only from plausibly open-eye frames so a closed-eye startup can't poison it.</p></li>
+            <li class="reveal"><span class="step-number">03</span><div class="step-icon chart-icon" aria-hidden="true"><i></i><i></i><i></i></div><h3>BPM &amp; alert zones</h3><p>A debounced blink-state machine produces a rolling BPM, compared against healthy / low / critical zones with quiet hours and category-aware thresholds.</p></li>
           </ol>
+        </div>
+      </section>
+
+      <section id="features" class="section features">
+        <div class="shell">
+          <div class="section-heading reveal"><p class="eyebrow"><span></span> What's in the app</p><h2>Everything the dashboard actually does.</h2></div>
+          <div class="feature-grid">
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--cyan)">◔</span>
+              <h3>Real-time BPM dashboard</h3>
+              <p>Live blinks-per-minute, session duration, blink count, last-blink indicator, and status — glanceable at a distance.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--low)">▲</span>
+              <h3>Alert zones</h3>
+              <p>Healthy, low, and critical zones with configurable thresholds, quiet hours, and category-aware sensitivity.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--accent)">▤</span>
+              <h3>Session categories</h3>
+              <p>Tag sessions as Work, TV, Reading, Gaming, or Other so trends reflect what you were actually doing.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--cyan)">╱</span>
+              <h3>Local history &amp; charts</h3>
+              <p>Every session is recorded on-device with BPM trend charts you can review — nothing leaves your device.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--healthy)">◑</span>
+              <h3>Docked Mode</h3>
+              <p>A keep-awake, dimmed near-black overlay so a phone or Mac can sit docked on the desk and keep tracking without sleeping or glaring.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span class="feature-icon" aria-hidden="true" style="color:var(--critical)">◎</span>
+              <h3>Debug camera overlay</h3>
+              <p>An optional live view of face/eye landmarks and per-eye EAR values, for verifying tracking quality.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="diagnostics" class="section diagnostics">
+        <div class="shell diagnostics-grid">
+          <div class="reveal">
+            <p class="eyebrow"><span></span> macOS only</p>
+            <h2>Performance diagnostics that stay on your Mac.</h2>
+            <p>BlinkSense tracks thermal-state transitions, capture/Vision FPS, dropped frames, CPU time, and resident memory so you can see how tracking is behaving — and steps analysis down automatically under thermal load. Diagnostics are counters only: no camera frames, no face data, and the JSON export never leaves your device.</p>
+            <ul class="feature-list">
+              <li>Adaptive thermal policy — steps down at fair/serious, suspends at critical</li>
+              <li>Capture &amp; Vision FPS, dropped-frame counts</li>
+              <li>CPU time and resident memory</li>
+              <li>Local-only JSON export</li>
+            </ul>
+          </div>
+          <div class="diagnostics-panel reveal" aria-label="Performance diagnostics panel, demo view">
+            <div class="diagnostics-row">
+              <span>Thermal state</span>
+              <span class="zone-badge zone-healthy">Nominal</span>
+            </div>
+            <div class="diagnostics-row"><span>Capture FPS</span><span class="mono-value">20.0</span></div>
+            <div class="diagnostics-row"><span>Vision FPS</span><span class="mono-value">19.7</span></div>
+            <div class="diagnostics-row"><span>Dropped frames</span><span class="mono-value">0</span></div>
+            <div class="diagnostics-row"><span>CPU time</span><span class="mono-value">7.8%</span></div>
+            <div class="diagnostics-row"><span>Resident memory</span><span class="mono-value">141 MB</span></div>
+            <button class="button button-small button-outline" type="button" disabled>Export JSON (local only)</button>
+          </div>
         </div>
       </section>
 
       <section id="privacy" class="section privacy">
         <div class="shell privacy-panel reveal">
-          <div class="privacy-copy"><p class="eyebrow"><span></span> Private by design</p><h2>Your face is not our product.</h2><p>BlinkSense is designed to process camera signals locally on your device, without uploading or storing video for analysis.</p><a class="text-link" href="#faq">Read the privacy FAQ <span aria-hidden="true">→</span></a></div>
-          <div class="privacy-points"><div><span class="check">✓</span><p><strong>On-device processing</strong><br />Designed to keep camera analysis local.</p></div><div><span class="check">✓</span><p><strong>No video upload or storage</strong><br />Designed without sending recordings for analysis.</p></div><div><span class="check">✓</span><p><strong>You stay in control</strong><br />Pause or turn off awareness anytime.</p></div></div>
+          <div class="privacy-copy"><p class="eyebrow"><span></span> Private by design</p><h2>Your face is not our product.</h2><p>All camera analysis runs locally on your device. No camera frames, facial data, or session video ever leave the device or get uploaded — verified in Settings and in the code itself.</p><a class="text-link" href="#faq">Read the privacy FAQ <span aria-hidden="true">→</span></a></div>
+          <div class="privacy-points">
+            <div><span class="check">✓</span><p><strong>On-device processing</strong><br />Every frame is analyzed locally — there is no networking path in the tracker.</p></div>
+            <div><span class="check">✓</span><p><strong>No video upload or storage</strong><br />Camera frames and face data are never recorded, sent, or stored off-device.</p></div>
+            <div><span class="check">✓</span><p><strong>Diagnostics stay local</strong><br />macOS performance counters export to JSON on your device only — never uploaded.</p></div>
+          </div>
         </div>
       </section>
 
-      <section class="section platform">
-        <div class="shell platform-grid">
-          <div class="device-stack reveal" aria-hidden="true"><div class="laptop"><div class="laptop-screen"><div class="mini-nav"></div><div class="mini-copy"></div><div class="mini-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="mini-pop">Gentle check-in</div></div><div class="laptop-base"></div></div><div class="floating-chip">◌ &nbsp; Runs where you work</div></div>
-          <div class="reveal"><p class="eyebrow"><span></span> Made for your desk</p><h2>Awareness that fits inside your workflow.</h2><p>BlinkSense is being designed for the laptop-based workday: the stretches of concentrated time that tend to disappear between tabs, tasks, and calls.</p><ul class="feature-list"><li>Lightweight session awareness</li><li>Adjustable cues and quiet hours</li><li>A clear, uncluttered view of your own trends</li></ul></div>
+      <section id="platforms" class="section platform">
+        <div class="shell">
+          <div class="section-heading reveal"><p class="eyebrow"><span></span> One blink model, five platforms</p><h2>Built native for where you actually work.</h2></div>
+          <div class="platform-grid-cards">
+            <article class="platform-card reveal">
+              <h3>macOS</h3>
+              <p class="platform-stack">Swift / SwiftUI · AVFoundation · Vision</p>
+              <p>Front camera, EAR-based blink detection, adaptive thermal policy, and local performance diagnostics.</p>
+            </article>
+            <article class="platform-card reveal">
+              <h3>Windows</h3>
+              <p class="platform-stack">Electron · local Vision/landmark pipeline</p>
+              <p>Webcam landmark-to-EAR mapping, with a Setup installer and Portable fallback.</p>
+            </article>
+            <article class="platform-card reveal">
+              <h3>Android</h3>
+              <p class="platform-stack">Kotlin / Jetpack Compose · CameraX · ML Kit</p>
+              <p>Face contours drive EAR calibration and blink state; the dashboard session owns the camera lifecycle.</p>
+            </article>
+            <article class="platform-card reveal">
+              <h3>iOS Vision</h3>
+              <p class="platform-stack">Swift / SwiftUI · AVCaptureSession · Vision</p>
+              <p>RGB front-camera face landmarks — works on any iPhone front camera.</p>
+            </article>
+            <article class="platform-card reveal">
+              <h3>iOS Sense</h3>
+              <p class="platform-stack">Swift / SwiftUI · ARKit</p>
+              <p>TrueDepth blend shapes (<code>eyeBlinkLeft</code> / <code>eyeBlinkRight</code>) for the highest-fidelity signal on compatible iPhones.</p>
+            </article>
+          </div>
         </div>
       </section>
-
-      <section class="section benefits"><div class="shell"><div class="section-heading centered reveal"><p class="eyebrow"><span></span> Designed with care</p><h2>More than a reminder.</h2></div><div class="benefit-grid"><article class="reveal"><span>01</span><h3>Respectful</h3><p>Built around your attention—not around stealing it.</p></article><article class="reveal"><span>02</span><h3>Personal</h3><p>Your work habits are yours. Your settings should be, too.</p></article><article class="reveal"><span>03</span><h3>Practical</h3><p>Made for real desk days, not idealized routines.</p></article></div></div></section>
 
       <section id="device-test-builds" class="section device-test-builds" aria-labelledby="device-test-builds-title">
         <div class="shell">
           <div class="download-heading reveal">
             <p class="eyebrow"><span></span> Device validation pre-releases</p>
             <h2 id="device-test-builds-title">Device <em>Test Builds</em></h2>
-            <p>These downloads are pre-releases for device validation only. They are not medical devices and are not production releases.</p>
+            <p>These downloads are pre-releases for device validation only. They are not medical devices and are not production releases. Builds are currently unsigned — expect a Gatekeeper or SmartScreen warning.</p>
           </div>
           <div class="download-grid">
             <article class="download-card reveal">
@@ -126,13 +259,19 @@
         </div>
       </section>
 
-      <section id="faq" class="section faq"><div class="shell faq-grid"><div class="reveal"><p class="eyebrow"><span></span> Questions, answered</p><h2>Clear about what BlinkSense is—and is not.</h2><p>We believe thoughtful technology starts with plain language.</p></div><div class="faq-list reveal"><details><summary>Is BlinkSense a medical device?<span aria-hidden="true">+</span></summary><p>No. BlinkSense is an awareness tool. It does not diagnose, treat, cure, or prevent any medical condition, and it is not a substitute for professional medical advice.</p></details><details><summary>Does BlinkSense record me?<span aria-hidden="true">+</span></summary><p>BlinkSense is designed not to store or send video away for analysis. It is designed around on-device processing of camera signals.</p></details><details><summary>Will it interrupt my work?<span aria-hidden="true">+</span></summary><p>It is designed to be quiet and adjustable. You choose the level and timing of any awareness cues, and can pause them whenever you need.</p></details><details><summary>Which devices will it support?<span aria-hidden="true">+</span></summary><p>We are beginning with laptop-based desk workflows. Platform availability will be shared with early-access participants as the product develops.</p></details></div></div></section>
+      <section id="faq" class="section faq"><div class="shell faq-grid"><div class="reveal"><p class="eyebrow"><span></span> Questions, answered</p><h2>Clear about what BlinkSense is—and is not.</h2><p>We believe thoughtful technology starts with plain language.</p></div><div class="faq-list reveal">
+        <details><summary>Is BlinkSense a medical device?<span aria-hidden="true">+</span></summary><p>No. BlinkSense is an awareness tool. It does not diagnose, treat, cure, or prevent any medical condition, and it is not a substitute for professional medical advice.</p></details>
+        <details><summary>Does BlinkSense record me?<span aria-hidden="true">+</span></summary><p>No. All camera analysis happens locally on-device. No camera frames, facial data, or session video ever leave the device or get uploaded — there is no networking path in the tracker.</p></details>
+        <details><summary>What is Docked Mode?<span aria-hidden="true">+</span></summary><p>A keep-awake, dimmed near-black overlay for when your phone or Mac sits docked on the desk facing you. It stops the display sleeping or glaring while tracking continues in the foreground — camera access on iOS can't run in the background, so Docked Mode is the accepted workaround for desk-docked counting.</p></details>
+        <details><summary>Which devices does it support?<span aria-hidden="true">+</span></summary><p>macOS (Apple Silicon and Intel), Windows, Android, and iOS — with a Vision app using the front camera and a Sense app using ARKit TrueDepth on compatible iPhones. Download links for current device-test builds are below; iOS requires TestFlight or Xcode until the Apple Developer account is active.</p></details>
+        <details><summary>Will it interrupt my work?<span aria-hidden="true">+</span></summary><p>Alerts are configurable per zone, category-aware, and support quiet hours — you decide when and how BlinkSense speaks up, and can pause it anytime.</p></details>
+      </div></div></section>
 
-      <section class="cta"><div class="shell cta-inner reveal"><p class="eyebrow"><span></span> A calmer screen day starts here</p><h2>Make room for the<br /><em>little things.</em></h2><p>Join the first to hear when BlinkSense is ready for your desk.</p><button class="button button-light js-early-access" type="button">Request early access <span aria-hidden="true">→</span></button><small>No signup is active yet. This button won’t collect or send any data.</small></div></section>
+      <section class="cta"><div class="shell cta-inner reveal"><p class="eyebrow"><span></span> A calmer screen day starts here</p><h2>Make room for the<br /><em>little things.</em></h2><p>Join the first to hear when BlinkSense is ready for your desk.</p><button class="button button-light js-early-access" type="button">Request early access <span aria-hidden="true">→</span></button><small>No signup is active yet. This button won't collect or send any data.</small></div></section>
     </main>
 
-    <footer class="site-footer"><div class="shell footer-grid"><a class="brand" href="#top" aria-label="BlinkSense home"><svg aria-hidden="true" viewBox="0 0 34 34" fill="none"><path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/><circle cx="17" cy="17" r="3.2" fill="currentColor"/></svg><span>Blink<span>Sense</span></span></a><p>Thoughtful awareness for focused screen work.</p><div class="footer-links"><a href="#privacy">Privacy</a><a href="#faq">FAQ</a><button class="footer-button js-early-access" type="button">Early access</button></div><small>© <span id="year"></span> BlinkSense. Awareness, not medical advice.</small></div></footer>
-    <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden><button class="toast-close" type="button" aria-label="Close">×</button><strong>Early access is not open yet.</strong><span>We haven’t enabled collection, so no information was requested or sent.</span></div>
+    <footer class="site-footer"><div class="shell footer-grid"><a class="brand" href="#top" aria-label="BlinkSense home"><svg aria-hidden="true" viewBox="0 0 34 34" fill="none"><path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/><circle cx="17" cy="17" r="3.2" fill="currentColor"/></svg><span>Blink<span>Sense</span></span></a><p>Real-time, on-device blink-rate awareness for focused screen work.</p><div class="footer-links"><a href="#privacy">Privacy</a><a href="#faq">FAQ</a><button class="footer-button js-early-access" type="button">Early access</button></div><small>© <span id="year"></span> BlinkSense. Awareness, not medical advice.</small></div></footer>
+    <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden><button class="toast-close" type="button" aria-label="Close">×</button><strong>Early access is not open yet.</strong><span>We haven't enabled collection, so no information was requested or sent.</span></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
