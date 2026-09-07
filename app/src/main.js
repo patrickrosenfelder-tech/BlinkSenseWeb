@@ -1,6 +1,7 @@
 import './style.css';
 import { BlinkDetector } from './blink-detector.js';
 import { saveSession, getAllSessions, clearSessions } from './db.js';
+import { computeActiveDurationMs, computeSessionAverageBpm, computeLiveBpm } from './bpm-math.js';
 
 const els = {
   video: document.getElementById('preview'),
@@ -30,7 +31,7 @@ const els = {
 const GAUGE_RADIUS = 60;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 const BPM_GAUGE_MAX = 30;
-const BLINK_WINDOW_MS = 20000;
+const BLINK_WINDOW_MS = 60000;
 const ZONE = { CRITICAL: 'critical', LOW: 'low', HEALTHY: 'healthy' };
 const CAMERA_RETRY_MS = 3000;
 
@@ -54,6 +55,33 @@ let currentZone = null;
 let zoneTimeMs = { healthy: 0, low: 0, critical: 0 };
 let lastZoneTickAt = null;
 let timerInterval = null;
+let bpmSamples = [];
+let lastBpmSampleAt = -Infinity;
+// Hidden-tab (backgrounded window) accounting, so wall-clock time the tab
+// spent hidden — during which no blinks can be detected — is excluded from
+// both the live and session-average BPM denominators.
+let accumulatedPauseMs = 0;
+// A single suspension span represents the union of verified interruptions:
+// hidden/backgrounded time and camera-loss time can overlap, but must only be
+// subtracted once.  The legacy name is retained because bpm-math.js exposes it
+// as a pure-test seam.
+let hiddenSinceMs = null;
+
+function beginTrackingSuspension() {
+  if (running && hiddenSinceMs === null) hiddenSinceMs = performance.now();
+}
+
+function endTrackingSuspension() {
+  if (hiddenSinceMs === null) return;
+  const durationMs = Math.max(0, performance.now() - hiddenSinceMs);
+  accumulatedPauseMs += durationMs;
+  // Native trackers shift timestamps forward after a pause/interruption so
+  // "last 60s" means 60 seconds of active tracking, never dead wall-clock.
+  blinkTimestamps = blinkTimestamps.map((timestamp) => timestamp + durationMs);
+  lastBpmSampleAt += durationMs;
+  lastZoneTickAt = performance.now();
+  hiddenSinceMs = null;
+}
 
 // ---------- UI helpers ----------
 
@@ -124,6 +152,7 @@ function releaseCamera() {
 function handleCameraLoss() {
   if (cameraLost || !running) return;
   cameraLost = true;
+  beginTrackingSuspension();
   stopLoop();
   setCameraStatus('Camera lost', 'error');
   setOverlayMessage('Camera in use by another app — waiting…');
@@ -139,6 +168,7 @@ function scheduleReacquire() {
       cameraLost = false;
       setCameraStatus('Live', 'live');
       if (!document.hidden) {
+        endTrackingSuspension();
         setOverlayMessage('');
         startLoop();
       } else {
@@ -162,9 +192,10 @@ function handleBlink() {
 function computeBpm() {
   const now = performance.now();
   blinkTimestamps = blinkTimestamps.filter((t) => now - t <= BLINK_WINDOW_MS);
-  const elapsedSinceStart = sessionStart ? now - sessionStart : 0;
-  const windowMs = Math.min(BLINK_WINDOW_MS, Math.max(elapsedSinceStart, 1000));
-  return (blinkTimestamps.length / windowMs) * 60000;
+  const activeElapsedMs = sessionStart
+    ? computeActiveDurationMs(sessionStart, now, accumulatedPauseMs, hiddenSinceMs)
+    : 0;
+  return computeLiveBpm(blinkTimestamps.length, activeElapsedMs, BLINK_WINDOW_MS);
 }
 
 function zoneForBpm(bpm) {
@@ -224,12 +255,21 @@ function stopLoop() {
 
 function startTimer() {
   clearInterval(timerInterval);
+  lastBpmSampleAt = -Infinity;
+  bpmSamples.length = 0;
   timerInterval = setInterval(() => {
     if (!sessionStart) return;
-    const elapsed = Math.floor((performance.now() - sessionStart) / 1000);
+    const now = performance.now();
+    const elapsed = Math.floor(computeActiveDurationMs(sessionStart, now, accumulatedPauseMs, hiddenSinceMs) / 1000);
     const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
     const ss = String(elapsed % 60).padStart(2, '0');
     els.statTimer.textContent = `${mm}:${ss}`;
+
+    // Sample BPM every 5s like the native apps (BPM history graph).
+    if (now - lastBpmSampleAt >= 5000) {
+      lastBpmSampleAt = now;
+      bpmSamples.push({ offsetSeconds: elapsed, bpm: computeBpm() });
+    }
   }, 500);
 }
 
@@ -257,6 +297,8 @@ async function startMonitoring() {
   running = true;
   cameraLost = false;
   sessionStart = performance.now();
+  accumulatedPauseMs = 0;
+  hiddenSinceMs = document.hidden ? sessionStart : null;
   blinkTimestamps = [];
   blinkCount = 0;
   alertCount = 0;
@@ -296,17 +338,23 @@ async function stopMonitoring() {
   els.stopBtn.hidden = true;
 
   if (sessionStart) {
-    const durationMs = performance.now() - sessionStart;
+    const now = performance.now();
+    const durationMs = now - sessionStart;
     if (durationMs > 5000) {
+      // activeDurationMs excludes any hidden-tab time — that's the denominator
+      // the canonical session-average formula uses, not raw wall-clock duration.
+      const activeDurationMs = computeActiveDurationMs(sessionStart, now, accumulatedPauseMs, hiddenSinceMs);
       const totalZoneMs = zoneTimeMs.healthy + zoneTimeMs.low + zoneTimeMs.critical || 1;
-      const avgBpm = blinkCount > 0 ? blinkCount / (durationMs / 60000) : 0;
+      const avgBpm = computeSessionAverageBpm(blinkCount, activeDurationMs);
       await saveSession({
         startedAt: Date.now() - durationMs,
         durationMs,
+        activeDurationMs,
         category,
         avgBpm,
         blinkCount,
         alertCount,
+        bpmSamples: bpmSamples.length > 0 ? bpmSamples : null,
         zoneStats: {
           healthy: zoneTimeMs.healthy / totalZoneMs,
           low: zoneTimeMs.low / totalZoneMs,
@@ -316,6 +364,8 @@ async function stopMonitoring() {
       await renderHistory();
     }
     sessionStart = null;
+    hiddenSinceMs = null;
+    accumulatedPauseMs = 0;
   }
 }
 
@@ -372,9 +422,15 @@ els.wakeToggle.addEventListener('click', async () => {
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) {
     stopLoop();
-    if (running) setOverlayMessage('Paused — window not visible');
+    if (running) {
+      // Mark the start of a hidden span; no blinks can be detected while
+      // backgrounded, so this time must be excluded from BPM denominators.
+      beginTrackingSuspension();
+      setOverlayMessage('Paused — window not visible');
+    }
   } else {
     if (running && !cameraLost) {
+      endTrackingSuspension();
       setOverlayMessage('');
       startLoop();
     }
@@ -395,6 +451,35 @@ function formatDate(ts) {
   return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+/** Renders an SVG BPM-over-time line chart (mirrors native history graphs). */
+function renderBpmLine(samples) {
+  const W = 320, H = 96, PAD = 4;
+  const maxBpm = Math.max(...samples.map((s) => s.bpm), 12);
+  const minBpm = Math.min(...samples.map((s) => s.bpm), 0);
+  const span = Math.max(1, maxBpm - minBpm);
+  const duration = Math.max(1, samples[samples.length - 1].offsetSeconds);
+  const pts = samples.map((s, i) => {
+    const x = PAD + (i / (samples.length - 1)) * (W - 2 * PAD);
+    const y = H - PAD - ((s.bpm - minBpm) / span) * (H - 2 * PAD);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const area = `M ${pts[0].split(',')[0]},${H - PAD} L ${pts.join(' L ')} L ${pts[pts.length - 1].split(',')[0]},${H - PAD} Z`;
+  const zoneColors = { critical: 'var(--critical)', low: 'var(--low)', healthy: 'var(--healthy)' };
+  els.historyChart.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="BPM over time">
+      <defs>
+        <linearGradient id="bpm-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--healthy)" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="var(--healthy)" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#bpm-fill)"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="var(--healthy)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="var(--border)" stroke-width="1"/>
+    </svg>
+    <span class="history-chart-caption">BPM over ${formatDuration(duration * 1000)} — ${Math.round(maxBpm)} max / ${Math.round(minBpm)} min</span>`;
+}
+
 async function renderHistory() {
   const sessions = await getAllSessions();
   els.historyList.innerHTML = '';
@@ -409,14 +494,23 @@ async function renderHistory() {
 
   const recent = sessions.slice(0, 20).reverse();
   const maxBpm = Math.max(...recent.map((s) => s.avgBpm), BPM_GAUGE_MAX / 2);
-  recent.forEach((s) => {
-    const bar = document.createElement('div');
-    bar.className = 'history-bar';
-    bar.style.height = `${Math.max(4, Math.min(100, (s.avgBpm / maxBpm) * 100))}%`;
-    bar.style.background = s.avgBpm < 5 ? 'var(--critical)' : s.avgBpm < 12 ? 'var(--low)' : 'var(--healthy)';
-    bar.title = `${formatDate(s.startedAt)} — ${Math.round(s.avgBpm)} bpm`;
-    els.historyChart.appendChild(bar);
-  });
+
+  // Latest session gets a BPM line graph (same as native apps) when samples exist.
+  const latest = recent[recent.length - 1];
+  if (latest && latest.bpmSamples && latest.bpmSamples.length >= 2) {
+    els.historyChart.className = 'history-chart history-chart-line';
+    renderBpmLine(latest.bpmSamples);
+  } else {
+    els.historyChart.className = 'history-chart';
+    recent.forEach((s) => {
+      const bar = document.createElement('div');
+      bar.className = 'history-bar';
+      bar.style.height = `${Math.max(4, Math.min(100, (s.avgBpm / maxBpm) * 100))}%`;
+      bar.style.background = s.avgBpm < 5 ? 'var(--critical)' : s.avgBpm < 12 ? 'var(--low)' : 'var(--healthy)';
+      bar.title = `${formatDate(s.startedAt)} — ${Math.round(s.avgBpm)} bpm`;
+      els.historyChart.appendChild(bar);
+    });
+  }
 
   sessions.slice(0, 30).forEach((s) => {
     const li = document.createElement('li');
@@ -432,10 +526,13 @@ async function renderHistory() {
 
     const statsEl = document.createElement('div');
     statsEl.className = 'history-item-stats';
+    const bpmLabel = document.createElement('span');
+    bpmLabel.className = 'history-bpm-label';
+    bpmLabel.textContent = 'Session Avg';
     const bpmEl = document.createElement('span');
     bpmEl.className = 'history-bpm';
     bpmEl.textContent = `${Math.round(s.avgBpm)} bpm`;
-    statsEl.appendChild(bpmEl);
+    statsEl.append(bpmLabel, bpmEl);
 
     li.append(main, statsEl);
     els.historyList.appendChild(li);

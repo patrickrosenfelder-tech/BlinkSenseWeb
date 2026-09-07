@@ -286,3 +286,25 @@ h1 em, h2 em { color: var(--accent); font-style: normal; }
   .site-footer small { margin-top: 0; }
   .toast { bottom: 16px; left: 16px; right: 16px; max-width: none; }
 }
+
+
+/* Vision check demo */
+.vision-demo { padding: 96px 0; }
+.vcd-root { max-width: 680px; margin-top: 34px; }
+.vcd-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.vcd-nav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.vcd-blurb { color: var(--text-secondary); font-size: 15px; margin: 0 0 18px; }
+.vcd-test { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 26px; box-shadow: var(--shadow-md); }
+.vcd-hint { font-weight: 600; color: var(--text); margin-bottom: 18px; }
+.vcd-feedback { min-height: 22px; font-weight: 600; margin: 14px 0 0; }
+.vcd-test canvas { margin: 0 auto 16px; }
+.vcd-test .button { margin-top: 14px; margin-right: 8px; }
+.vcd-swatch-row { display: flex; gap: 14px; margin: 4px 0 8px; }
+.vcd-swatch { flex: 1; border-radius: 14px; border: 1px solid var(--border); cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; box-shadow: var(--shadow-sm); }
+.vcd-swatch:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.vcd-result { text-align: center; padding: 18px 8px; }
+.vcd-verdict { font-size: 30px; font-weight: 800; letter-spacing: -.6px; }
+.vcd-status { font: 700 12px/1 var(--mono); letter-spacing: 1.6px; text-transform: uppercase; margin: 10px 0 12px; }
+.vcd-status.ok { color: var(--healthy); }
+.vcd-status.warn { color: var(--low); }
+.vcd-result p { color: var(--text-secondary); max-width: 460px; margin: 0 auto 18px; }
