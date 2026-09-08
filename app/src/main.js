@@ -26,6 +26,8 @@ const els = {
   toast: document.getElementById('toast'),
   toastTitle: document.getElementById('toast-title'),
   toastBody: document.getElementById('toast-body'),
+  diagnosticsValues: document.getElementById('diagnostics-values'),
+  exportDiagnosticsBtn: document.getElementById('export-diagnostics-btn'),
 };
 
 const GAUGE_RADIUS = 60;
@@ -241,6 +243,29 @@ function tick(timestampMs) {
   updateZone(bpm);
 }
 
+function updateDiagnostics() {
+  const data = detector.getDiagnostics(els.video);
+  const camera = data.camera.width ? `${data.camera.width}×${data.camera.height} @ ${data.camera.frameRate ?? '?'} FPS` : 'Not started';
+  const values = [
+    camera,
+    `${data.decodedFps.toFixed(1)} / ${data.processedFps.toFixed(1)}`,
+    data.openBaseline.toFixed(3),
+    `${data.closeThreshold.toFixed(3)} / ${data.reopenThreshold.toFixed(3)}`,
+    `${data.acceptedEvents.length} / ${data.rejectedEvents.length}`,
+  ];
+  Array.from(els.diagnosticsValues.querySelectorAll('dd')).forEach((element, index) => { element.textContent = values[index]; });
+}
+
+els.exportDiagnosticsBtn.addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(detector.getDiagnostics(els.video), null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `blinksense-diagnostics-${new Date().toISOString().replaceAll(':', '-')}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
 function startLoop() {
   if (rafId) return;
   rafId = requestAnimationFrame(tick);
@@ -270,6 +295,7 @@ function startTimer() {
       lastBpmSampleAt = now;
       bpmSamples.push({ offsetSeconds: elapsed, bpm: computeBpm() });
     }
+    updateDiagnostics();
   }, 500);
 }
 
@@ -295,6 +321,7 @@ async function startMonitoring() {
   }
 
   running = true;
+  detector.resetSession();
   cameraLost = false;
   sessionStart = performance.now();
   accumulatedPauseMs = 0;
@@ -308,6 +335,7 @@ async function startMonitoring() {
   els.statBlinks.textContent = '0';
   els.statAlerts.textContent = '0';
   els.statTimer.textContent = '00:00';
+  updateDiagnostics();
 
   els.startBtn.hidden = true;
   els.stopBtn.hidden = false;

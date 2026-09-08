@@ -117,6 +117,20 @@
       <p id="history-empty" class="fine-print">No sessions yet. Start monitoring to build your history.</p>
     </section>
 
+    <section class="card diagnostics-card" aria-labelledby="diagnostics-heading">
+      <div class="history-head">
+        <div><h2 id="diagnostics-heading">Private diagnostics</h2><p class="fine-print">Camera settings and scalar detector decisions only — never video or landmarks.</p></div>
+        <button id="export-diagnostics-btn" class="button-small button-outline" type="button">Export JSON</button>
+      </div>
+      <dl id="diagnostics-values" class="diagnostics-values" aria-live="polite">
+        <div><dt>Camera</dt><dd>Not started</dd></div>
+        <div><dt>Decoded / processed FPS</dt><dd>—</dd></div>
+        <div><dt>EAR baseline</dt><dd>—</dd></div>
+        <div><dt>Close / reopen threshold</dt><dd>—</dd></div>
+        <div><dt>Accepted / rejected</dt><dd>0 / 0</dd></div>
+      </dl>
+    </section>
+
     <section class="card disclaimer-card">
       <h2>Not a medical device</h2>
       <p>BlinkSense is a wellness-awareness tool that estimates blink rate from your camera feed to encourage healthy screen breaks. It is not intended to diagnose, treat, or monitor any medical condition. If you have concerns about your eyes or vision, consult an eye-care professional.</p>
