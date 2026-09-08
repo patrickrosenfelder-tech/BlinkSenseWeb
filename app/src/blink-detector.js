@@ -1,4 +1,5 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import { BlinkStateMachine } from './blink-state-machine.js';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
@@ -7,9 +8,6 @@ const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/w
 // Six-point eye contours (dlib-style EAR) mapped onto MediaPipe's 468-point face mesh.
 const RIGHT_EYE = [33, 160, 158, 133, 153, 144];
 const LEFT_EYE = [362, 385, 387, 263, 373, 380];
-
-const EAR_THRESHOLD = 0.21;
-const CONSEC_FRAMES = 2;
 
 function dist(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -26,8 +24,11 @@ export class BlinkDetector {
   constructor({ onBlink } = {}) {
     this.onBlink = onBlink;
     this.landmarker = null;
-    this.consecLow = 0;
+    this.machine = new BlinkStateMachine();
     this.lastVideoTime = -1;
+    this.processedFrames = 0;
+    this.decodedFrames = 0;
+    this.startedAt = null;
   }
 
   async load() {
@@ -51,14 +52,27 @@ export class BlinkDetector {
   dispose() {
     this.landmarker?.close();
     this.landmarker = null;
-    this.consecLow = 0;
+    this.machine = new BlinkStateMachine();
     this.lastVideoTime = -1;
+    this.processedFrames = 0;
+    this.decodedFrames = 0;
+    this.startedAt = null;
+  }
+
+  resetSession() {
+    this.machine = new BlinkStateMachine();
+    this.lastVideoTime = -1;
+    this.processedFrames = 0;
+    this.decodedFrames = 0;
+    this.startedAt = null;
   }
 
   /** Runs face-landmark + EAR blink detection on the current video frame. Returns null if no new frame or no face. */
   detectFrame(video, timestampMs) {
     if (!this.landmarker || video.currentTime === this.lastVideoTime) return null;
     this.lastVideoTime = video.currentTime;
+    this.startedAt ??= timestampMs;
+    this.decodedFrames++;
 
     const result = this.landmarker.detectForVideo(video, timestampMs);
     const landmarks = result.faceLandmarks?.[0];
@@ -68,17 +82,22 @@ export class BlinkDetector {
     const height = video.videoHeight;
     const ear = (eyeAspectRatio(landmarks, RIGHT_EYE, width, height) + eyeAspectRatio(landmarks, LEFT_EYE, width, height)) / 2;
 
-    let blinked = false;
-    if (ear < EAR_THRESHOLD) {
-      this.consecLow++;
-    } else {
-      if (this.consecLow >= CONSEC_FRAMES) {
-        blinked = true;
-        this.onBlink?.();
-      }
-      this.consecLow = 0;
-    }
+    this.processedFrames++;
+    const decision = this.machine.process({ timestampMs, ear });
+    if (decision.blinked) this.onBlink?.();
+    return { faceFound: true, ear, blinked: decision.blinked, decision: decision.decision };
+  }
 
-    return { faceFound: true, ear, blinked };
+  getDiagnostics(video) {
+    const elapsedSeconds = this.startedAt === null ? 0 : Math.max(0.001, (performance.now() - this.startedAt) / 1000);
+    const track = video?.srcObject?.getVideoTracks?.()[0];
+    const settings = track?.getSettings?.() || {};
+    return {
+      privacy: 'Scalar diagnostics only; no video frames or landmarks are stored.',
+      camera: { width: settings.width ?? video?.videoWidth ?? null, height: settings.height ?? video?.videoHeight ?? null, frameRate: settings.frameRate ?? null, facingMode: settings.facingMode ?? null },
+      decodedFps: elapsedSeconds === 0 ? 0.0 : this.decodedFrames / elapsedSeconds,
+      processedFps: elapsedSeconds === 0 ? 0.0 : this.processedFrames / elapsedSeconds,
+      ...this.machine.getDiagnostics(),
+    };
   }
 }
