@@ -43,9 +43,9 @@ for (const fps of [10, 15, 24, 30, 60]) {
 test('rejects micro-closures and noisy threshold crossings', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
-  frame(machine, 50, CLOSED_EAR);
-  frame(machine, 100, OPEN_EAR); // 50ms micro-closure
-  for (let time = 200; time <= 600; time += 50) frame(machine, time, time % 100 ? 0.24 : 0.23);
+  frame(machine, 1050, CLOSED_EAR);
+  frame(machine, 1100, OPEN_EAR); // 50ms micro-closure
+  for (let time = 1200; time <= 1600; time += 50) frame(machine, time, time % 100 ? 0.24 : 0.23);
   assert.equal(machine.blinkCount, 0);
   assert.ok(machine.getDiagnostics().rejectedEvents.some((event) => event.reason === 'closure_too_short'));
 });
@@ -53,8 +53,8 @@ test('rejects micro-closures and noisy threshold crossings', () => {
 test('sustained closure counts once and reopen jitter cannot over-count', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
-  for (let time = 50; time <= 1000; time += 50) frame(machine, time, CLOSED_EAR);
-  for (const [time, ear] of [[1050, OPEN_EAR], [1100, 0.20], [1150, OPEN_EAR], [1200, 0.20], [1250, OPEN_EAR], [1300, OPEN_EAR]]) {
+  for (let time = 1050; time <= 2000; time += 50) frame(machine, time, CLOSED_EAR);
+  for (const [time, ear] of [[2050, OPEN_EAR], [2100, 0.20], [2150, OPEN_EAR], [2200, 0.20], [2250, OPEN_EAR], [2300, OPEN_EAR]]) {
     frame(machine, time, ear);
   }
   assert.equal(machine.blinkCount, 1);
@@ -73,19 +73,47 @@ test('EAR is scale invariant for equivalent landmark coordinates', () => {
 test('enforces refractory period (debounce) for rapid successive closures', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
-  
+
   // First valid blink (lasts 100ms)
-  for (let time = 100; time <= 200; time += 20) frame(machine, time, CLOSED_EAR);
-  frame(machine, 250, OPEN_EAR); 
+  for (let time = 1100; time <= 1200; time += 20) frame(machine, time, CLOSED_EAR);
+  frame(machine, 1250, OPEN_EAR);
   assert.equal(machine.blinkCount, 1);
-  
-  // Second closure within refractory period (refractory is 180ms, lastAcceptedAt = 250)
-  const res = frame(machine, 350, CLOSED_EAR);
+
+  // Second closure within refractory period (refractory is 180ms, lastAcceptedAt = 1250)
+  const res = frame(machine, 1350, CLOSED_EAR);
   assert.equal(res.decision, 'rejected_refractory');
   assert.equal(machine.getDiagnostics().state, 'open');
-  
+
   // Close after refractory period
-  frame(machine, 450, CLOSED_EAR);
-  frame(machine, 600, OPEN_EAR);
+  frame(machine, 1450, CLOSED_EAR);
+  frame(machine, 1600, OPEN_EAR);
   assert.equal(machine.blinkCount, 2);
+});
+
+test('explicit stability gate: unstable head motion cannot enter/complete a blink', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 1050, OPEN_EAR); // Past warmup
+
+  // High yaw/motion frames (unstable)
+  machine.process({ timestampMs: 1100, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+  machine.process({ timestampMs: 1150, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+
+  // Try to blink while unstable
+  let res = machine.process({ timestampMs: 1200, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.001 });
+  assert.equal(res.decision, 'rejected_unstable', 'Should explicitly reject closure due to instability');
+  assert.equal(machine.state, 'open', 'State should remain open');
+
+  machine.process({ timestampMs: 1300, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+
+  // Stabilize
+  machine.process({ timestampMs: 1400, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
+  machine.process({ timestampMs: 1450, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
+
+  // Now stable real blink
+  machine.process({ timestampMs: 1500, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  machine.process({ timestampMs: 1550, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  res = machine.process({ timestampMs: 1650, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
+  assert.equal(res.decision, 'accepted_blink', 'Stable blink should be accepted');
+  assert.equal(machine.blinkCount, 1);
 });

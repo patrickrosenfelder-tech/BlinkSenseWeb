@@ -257,7 +257,13 @@ function updateDiagnostics() {
 }
 
 els.exportDiagnosticsBtn.addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(detector.getDiagnostics(els.video), null, 2)], { type: 'application/json' });
+  let diagJson;
+  if (running || !localStorage.getItem('blinksense-diagnostics')) {
+    diagJson = JSON.stringify(detector.getDiagnostics(els.video), null, 2);
+  } else {
+    diagJson = localStorage.getItem('blinksense-diagnostics');
+  }
+  const blob = new Blob([diagJson], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -391,6 +397,7 @@ async function stopMonitoring() {
       });
       await renderHistory();
     }
+    localStorage.setItem('blinksense-diagnostics', JSON.stringify(detector.getDiagnostics(els.video), null, 2));
     sessionStart = null;
     hiddenSinceMs = null;
     accumulatedPauseMs = 0;

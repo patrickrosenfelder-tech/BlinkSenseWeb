@@ -6,6 +6,9 @@ const REOPEN_RATIO = 0.82;
 const MIN_CLOSURE_MS = 80;
 const REFRACTORY_MS = 180;
 const MAX_EVENTS = 200;
+const STABILITY_THRESHOLD_MOTION = 0.00005; // Motion above this indicates instability
+const STABILITY_THRESHOLD_YAW = 0.05; // Yaw above this indicates instability
+const STABILITY_WINDOW_MS = 150; // Window for measuring stability
 
 export class BlinkStateMachine {
   constructor({ defaultOpenEar = DEFAULT_OPEN_EAR } = {}) {
@@ -17,6 +20,36 @@ export class BlinkStateMachine {
     this.blinkCount = 0;
     this.acceptedEvents = [];
     this.rejectedEvents = [];
+    this.warmupUntil = null;
+    this.stabilityFrames = []; // Track recent motion/yaw for stability gating
+  }
+
+  resetTracking() {
+    this.openBaseline = 0.0;
+    this.state = 'open';
+    this.closedAt = null;
+    this.warmupUntil = null;
+    this.stabilityFrames = [];
+  }
+
+  isLandmarkStable() {
+    // Landmarks are stable if recent frames show consistently low motion and low yaw
+    if (this.stabilityFrames.length === 0) return true; // Assume stable if no data yet
+
+    const now = this.stabilityFrames[this.stabilityFrames.length - 1].timestampMs;
+    const recentWindow = this.stabilityFrames.filter(f => (now - f.timestampMs) < STABILITY_WINDOW_MS);
+
+    // If we don't have enough recent frames, check just the last few frames
+    const framesToCheck = recentWindow.length >= 2 ? recentWindow : this.stabilityFrames.slice(-3);
+    if (framesToCheck.length === 0) return true;
+
+    // Check if any recent frame shows instability
+    for (const frame of framesToCheck) {
+      if (Math.abs(frame.yawProxy) > STABILITY_THRESHOLD_YAW || frame.motion > STABILITY_THRESHOLD_MOTION) {
+        return false;
+      }
+    }
+    return true;
   }
 
   static eyeAspectRatio(points) {
@@ -34,15 +67,39 @@ export class BlinkStateMachine {
     if (list.length > MAX_EVENTS) list.shift();
   }
 
-  process({ timestampMs, ear }) {
+  process({ timestampMs, ear, yawProxy = 0, motion = 0 }) {
     if (!Number.isFinite(timestampMs) || !Number.isFinite(ear)) return { blinked: false, decision: 'rejected_invalid_measurement' };
+
+    // Track stability frames for explicit landmark-stability gating
+    this.stabilityFrames.push({ timestampMs, yawProxy, motion });
+    if (this.stabilityFrames.length > 100) this.stabilityFrames.shift();
 
     if (this.openBaseline === 0.0) {
       this.openBaseline = ear;
+      this.warmupUntil = timestampMs + 500;
     }
 
-    const isClosed = ear <= this.closeThreshold;
-    const isOpen = ear >= this.reopenThreshold;
+    if (this.warmupUntil !== null) {
+      if (timestampMs < this.warmupUntil) {
+        if (ear > this.openBaseline) {
+          this.openBaseline = ear;
+        }
+        return { blinked: false, decision: 'warmup' };
+      } else {
+        this.warmupUntil = null;
+      }
+    }
+
+    const stable = this.isLandmarkStable();
+    if (!stable) {
+      return { blinked: false, decision: 'rejected_unstable' };
+    }
+
+    const currentCloseThreshold = this.openBaseline * CLOSE_RATIO;
+    const currentReopenThreshold = this.openBaseline * REOPEN_RATIO;
+
+    const isClosed = ear <= currentCloseThreshold;
+    const isOpen = ear >= currentReopenThreshold;
 
     // Adapt only from confidently open frames. Slow EWMA prevents a blink or
     // startup closed eye from poisoning the per-session baseline.
@@ -85,6 +142,8 @@ export class BlinkStateMachine {
       reopenThreshold: this.reopenThreshold,
       acceptedEvents: [...this.acceptedEvents],
       rejectedEvents: [...this.rejectedEvents],
+      landmarkStable: this.isLandmarkStable(),
+      stabilityFrameCount: this.stabilityFrames.length,
     };
   }
 }
