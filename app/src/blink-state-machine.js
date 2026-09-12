@@ -4,6 +4,7 @@ const DEFAULT_OPEN_EAR = 0.28; // conservative safe default pending per-session 
 const CLOSE_RATIO = 0.72;
 const REOPEN_RATIO = 0.82;
 const MIN_CLOSURE_MS = 80;
+const MAX_CLOSURE_MS = 600; // A blink held longer than this is stale/impossible; reset to open
 const REFRACTORY_MS = 180;
 const MAX_EVENTS = 200;
 const STABILITY_THRESHOLD_MOTION = 0.00005; // Motion above this indicates instability
@@ -88,6 +89,15 @@ export class BlinkStateMachine {
       } else {
         this.warmupUntil = null;
       }
+    }
+
+    // Expiry is evaluated BEFORE the stability gate so that sustained instability
+    // (e.g. head-shaking while eye appears closed) cannot permanently defer the reset.
+    if (this.state === 'closed' && (timestampMs - this.closedAt) > MAX_CLOSURE_MS) {
+      this.record(this.rejectedEvents, { timestampMs, reason: 'closure_expired', durationMs: timestampMs - this.closedAt });
+      this.state = 'open';
+      this.closedAt = null;
+      return { blinked: false, decision: 'rejected_closure_expired' };
     }
 
     const stable = this.isLandmarkStable();

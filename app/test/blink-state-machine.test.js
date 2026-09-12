@@ -90,6 +90,69 @@ test('enforces refractory period (debounce) for rapid successive closures', () =
   assert.equal(machine.blinkCount, 2);
 });
 
+test('maximum closure duration: stale closed state is rejected and resets to open', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 1050, OPEN_EAR); // past warmup
+
+  // Valid stable close at t=1100
+  let r = frame(machine, 1100, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+  assert.equal(machine.state, 'closed');
+
+  // Feed closed-eye frames; break immediately when expiry fires so no spurious
+  // second closure can start and collide with the refractory check below.
+  let expiryDecision = null;
+  let expiryTs = null;
+  for (let t = 1150; t <= 1900; t += 50) {
+    r = frame(machine, t, CLOSED_EAR);
+    if (r.decision === 'rejected_closure_expired') {
+      expiryDecision = r.decision;
+      expiryTs = t;
+      break; // stop immediately — do not feed more CLOSED_EAR after expiry
+    }
+  }
+
+  // Expiry must have fired
+  assert.ok(expiryDecision !== null, 'Expiry must fire while held closed beyond MAX_CLOSURE_MS');
+  assert.equal(expiryDecision, 'rejected_closure_expired');
+  assert.equal(machine.state, 'open', 'State must be open immediately after expiry');
+  assert.equal(machine.blinkCount, 0, 'Expired closure must not be counted as a blink');
+
+  // After expiry, a normal short blink must still be accepted
+  frame(machine, expiryTs + 50, OPEN_EAR);  // explicit open frame to settle state
+  r = frame(machine, expiryTs + 200, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+  r = frame(machine, expiryTs + 350, OPEN_EAR);
+  assert.equal(r.decision, 'accepted_blink');
+  assert.equal(machine.blinkCount, 1, 'Normal blink after expiry reset must still be counted');
+});
+
+
+
+// Verify: instability while closed must not prevent expiry evaluation
+test('maximum closure duration: expiry fires even when stability gate is active', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 1050, OPEN_EAR); // past warmup
+
+  // Stable close
+  frame(machine, 1100, CLOSED_EAR);
+  assert.equal(machine.state, 'closed');
+
+  // Now shake the head (instability) — gate will reject_unstable for all subsequent frames
+  // BUT expiry must still be evaluated regardless
+  for (let t = 1150; t <= 1900; t += 33) {
+    machine.process({ timestampMs: t, ear: CLOSED_EAR, yawProxy: 0.2, motion: 0.01 });
+  }
+
+  // At t=1950, still unstable — machine should have self-expired the closed state
+  const r = machine.process({ timestampMs: 1950, ear: CLOSED_EAR, yawProxy: 0.2, motion: 0.01 });
+  assert.equal(machine.state, 'open', 'Expiry must fire even while unstable');
+  assert.equal(machine.blinkCount, 0, 'Expired closure during instability must not count');
+});
+
+
 test('explicit stability gate: unstable head motion cannot enter/complete a blink', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
