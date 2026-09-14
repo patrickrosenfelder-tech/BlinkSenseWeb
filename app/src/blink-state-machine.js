@@ -120,9 +120,6 @@ export class BlinkStateMachine {
     }
 
     const stable = this.isLandmarkStable();
-    if (!stable) {
-      return { blinked: false, decision: 'rejected_unstable' };
-    }
 
     const currentCloseThreshold = this.openBaseline * CLOSE_RATIO;
     const currentReopenThreshold = this.openBaseline * REOPEN_RATIO;
@@ -132,7 +129,7 @@ export class BlinkStateMachine {
 
     // Adapt only from confidently open frames. Slow EWMA prevents a blink or
     // startup closed eye from poisoning the per-session baseline.
-    if (isOpen) this.openBaseline = this.openBaseline * 0.95 + ear * 0.05;
+    if (isOpen && stable) this.openBaseline = this.openBaseline * 0.95 + ear * 0.05;
 
     if (this.state === 'open' && isClosed) {
       if (timestampMs - this.lastAcceptedAt < REFRACTORY_MS) {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BlinkDetector } from '../src/blink-detector.js';
+import { BlinkDetector, eyeAspectRatio3D } from '../src/blink-detector.js';
 
 test('BlinkDetector diagnostics before first frame', (t) => {
   const detector = new BlinkDetector();
@@ -283,4 +283,49 @@ test('export functionality still works: getDiagnostics() returns complete diagno
   const diag2 = detector.getDiagnostics(mockVideo);
   assert.equal(diag2.decodedFps, diag.decodedFps, 'Multiple calls should return consistent data');
   assert.equal(diag2.processedFps, diag.processedFps, 'Multiple calls should return consistent data');
+});
+
+// PAT-897: 3D EAR must be rotation-invariant. Yawing the head (rotating the
+// eye landmark cloud around the vertical axis) must not collapse the EAR as
+// the old 2D projection did — a genuine blink during head movement must
+// still be visible, and head movement alone must not fake a blink.
+test('PAT-897: 3D eyeAspectRatio is invariant under head yaw rotation', (t) => {
+  // dlib-style 6-point eye contour: [outer, upper, upper, inner, lower, lower].
+  // Upper/lower pairs (p1/p5, p2/p4) share x so vertical distance isolates lid
+  // closure instead of being swamped by horizontal offset between the pairs.
+  const width = 1280;
+  const height = 720;
+  const openEye = [
+    { x: 0.10, y: 0.40, z: 0 }, // p0 outer
+    { x: 0.13, y: 0.38, z: 0 }, // p1 upper-left
+    { x: 0.17, y: 0.38, z: 0 }, // p2 upper-right
+    { x: 0.20, y: 0.40, z: 0 }, // p3 inner
+    { x: 0.17, y: 0.42, z: 0 }, // p4 lower-right
+    { x: 0.13, y: 0.42, z: 0 }, // p5 lower-left
+  ];
+  const earStraight = eyeAspectRatio3D(openEye, [0, 1, 2, 3, 4, 5], width, height);
+
+  // Yaw rotation by theta around the Y axis (head turning): x' = x cos, z' = -x sin
+  const theta = (30 * Math.PI) / 180;
+  const rotated = openEye.map(({ x, y, z }) => ({
+    x: x * Math.cos(theta) + z * Math.sin(theta),
+    y,
+    z: -x * Math.sin(theta) + z * Math.cos(theta),
+  }));
+  const earYaw = eyeAspectRatio3D(rotated, [0, 1, 2, 3, 4, 5], width, height);
+
+  // 3D EAR must barely change under rotation (<5% relative), so head turns
+  // cannot masquerade as blinks and real blinks stay visible during movement.
+  const ratio = Math.abs(earYaw - earStraight) / earStraight;
+  assert.ok(ratio < 0.05, `3D EAR drifted ${(ratio * 100).toFixed(1)}% under 30deg yaw (${earStraight.toFixed(3)} -> ${earYaw.toFixed(3)})`);
+
+  // Sanity: the closed eye EAR must still be clearly below the open eye EAR.
+  // Collapse the upper/lower lid pair toward the eye's horizontal midline (0.40).
+  const closedEye = openEye.map((p, i) => {
+    if (i === 1 || i === 2) return { ...p, y: 0.399 }; // upper lid dropped
+    if (i === 4 || i === 5) return { ...p, y: 0.401 }; // lower lid raised
+    return p;
+  });
+  const earClosed = eyeAspectRatio3D(closedEye, [0, 1, 2, 3, 4, 5], width, height);
+  assert.ok(earClosed < earStraight * 0.6, `closed EAR (${earClosed.toFixed(3)}) must be far below open EAR (${earStraight.toFixed(3)})`);
 });

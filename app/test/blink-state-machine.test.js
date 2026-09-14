@@ -130,8 +130,11 @@ test('maximum closure duration: stale closed state is rejected and resets to ope
 
 
 
-// Verify: instability while closed must not prevent expiry evaluation
-test('maximum closure duration: expiry fires even when stability gate is active', () => {
+// Verify: instability while closed must not prevent expiry evaluation,
+// and a closure that started stable must complete (count) even if the
+// head moves before the reopen — the state machine must never be
+// paralyzed by instability.
+test('blink started stable completes even when instability follows (no paralysis)', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
   frame(machine, 1050, OPEN_EAR); // past warmup
@@ -140,45 +143,53 @@ test('maximum closure duration: expiry fires even when stability gate is active'
   frame(machine, 1100, CLOSED_EAR);
   assert.equal(machine.state, 'closed');
 
-  // Now shake the head (instability) — gate will reject_unstable for all subsequent frames
-  // BUT expiry must still be evaluated regardless
-  for (let t = 1150; t <= 1900; t += 33) {
+  // Now shake the head (instability) — reopen must STILL be evaluated.
+  // Closure is 200ms (1100->1300), above MIN_CLOSURE_MS and well before
+  // the 600ms expiry, so this genuine blink must count.
+  for (let t = 1133; t <= 1267; t += 33) {
     machine.process({ timestampMs: t, ear: CLOSED_EAR, yawProxy: 0.2, motion: 0.01 });
   }
+  assert.equal(machine.state, 'closed', 'Eye still closed, must remain closed');
 
-  // At t=1950, still unstable — machine should have self-expired the closed state
-  const r = machine.process({ timestampMs: 1950, ear: CLOSED_EAR, yawProxy: 0.2, motion: 0.01 });
-  assert.equal(machine.state, 'open', 'Expiry must fire even while unstable');
-  assert.equal(machine.blinkCount, 0, 'Expired closure during instability must not count');
+  // Reopen while still unstable — must be accepted, not blocked.
+  const r = machine.process({ timestampMs: 1300, ear: OPEN_EAR, yawProxy: 0.2, motion: 0.01 });
+  assert.equal(r.decision, 'accepted_blink', 'Reopen must be evaluated even while unstable');
+  assert.equal(machine.state, 'open');
+  assert.equal(machine.blinkCount, 1, 'Genuine blink during head movement must count');
 });
 
-
-test('explicit stability gate: unstable head motion cannot enter/complete a blink', () => {
+// Verify: head movement alone (no EAR drop) never produces a blink, and a
+// genuine blink that STARTS while unstable is still detected (the machine
+// evaluates the EAR signal unconditionally).
+test('stability gate does not block blink evaluation; motion alone never counts', () => {
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
   frame(machine, 1050, OPEN_EAR); // Past warmup
 
-  // High yaw/motion frames (unstable)
-  machine.process({ timestampMs: 1100, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
-  machine.process({ timestampMs: 1150, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+  // High yaw/motion frames (unstable) with OPEN EAR — head movement alone.
+  let res = machine.process({ timestampMs: 1100, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+  assert.equal(res.decision, 'open', 'Motion alone with open eye must stay open');
+  res = machine.process({ timestampMs: 1150, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+  assert.equal(res.decision, 'open', 'Motion alone with open eye must stay open');
+  assert.equal(machine.state, 'open', 'State must remain open');
+  assert.equal(machine.blinkCount, 0, 'Head movement alone must never count');
 
-  // Try to blink while unstable
-  let res = machine.process({ timestampMs: 1200, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.001 });
-  assert.equal(res.decision, 'rejected_unstable', 'Should explicitly reject closure due to instability');
-  assert.equal(machine.state, 'open', 'State should remain open');
+  // Genuine blink while STILL unstable: closure starts immediately.
+  res = machine.process({ timestampMs: 1200, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.001 });
+  assert.equal(res.decision, 'closure_started', 'Closure must start regardless of instability');
+  assert.equal(machine.state, 'closed');
 
-  machine.process({ timestampMs: 1300, ear: OPEN_EAR, yawProxy: 0.1, motion: 0.001 });
+  machine.process({ timestampMs: 1300, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.001 });
 
-  // Stabilize
+  // Stabilize, then reopen — normal accepted blink.
   machine.process({ timestampMs: 1400, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
   machine.process({ timestampMs: 1450, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
-
-  // Now stable real blink
-  machine.process({ timestampMs: 1500, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
-  machine.process({ timestampMs: 1550, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
-  res = machine.process({ timestampMs: 1650, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
+  // Second genuine blink, past the 180ms refractory after the accepted blink at 1400.
+  machine.process({ timestampMs: 1650, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  machine.process({ timestampMs: 1700, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  res = machine.process({ timestampMs: 1800, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
   assert.equal(res.decision, 'accepted_blink', 'Stable blink should be accepted');
-  assert.equal(machine.blinkCount, 1);
+  assert.equal(machine.blinkCount, 2, 'Both genuine blinks must count; motion alone must not');
 });
 
 // PAT-894: at 3.67 FPS (production Android), sampled closure durations are always 635–1270ms

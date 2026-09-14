@@ -9,15 +9,23 @@ const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/w
 const RIGHT_EYE = [33, 160, 158, 133, 153, 144];
 const LEFT_EYE = [362, 385, 387, 263, 373, 380];
 
-function dist(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+function dist3D(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+export function eyeAspectRatio3D(landmarks, indices, width, height) {
+  const p = indices.map((i) => ({
+    x: landmarks[i].x * width,
+    y: landmarks[i].y * height,
+    z: landmarks[i].z * width,
+  }));
+  const vertical = dist3D(p[1], p[5]) + dist3D(p[2], p[4]);
+  const horizontal = dist3D(p[0], p[3]) * 2;
+  return horizontal === 0 ? 0 : vertical / horizontal;
 }
 
 function eyeAspectRatio(landmarks, indices, width, height) {
-  const p = indices.map((i) => ({ x: landmarks[i].x * width, y: landmarks[i].y * height }));
-  const vertical = dist(p[1], p[5]) + dist(p[2], p[4]);
-  const horizontal = dist(p[0], p[3]) * 2;
-  return horizontal === 0 ? 0 : vertical / horizontal;
+  return eyeAspectRatio3D(landmarks, indices, width, height);
 }
 
 export class BlinkDetector {
