@@ -180,3 +180,107 @@ test('BlinkDetector exports lastLandmarkTimestampMs and tracks actual closedDura
   assert.equal(stateOpenEvents.length, 1, 'Should have exactly one state_open event');
   assert.equal(stateOpenEvents[0].closedDuration, 150, 'closedDuration should be exactly 150ms');
 });
+
+test('getDiagnostics() must be pure: must not call persistDiagnosticsLocally', (t) => {
+  const detector = new BlinkDetector();
+  const mockFace = new Array(468).fill({x: 0.5, y: 0.5, z: 0.1});
+  detector.landmarker = { detectForVideo: () => ({ faceLandmarks: [mockFace] }) };
+
+  const mockVideo = { currentTime: 0, videoWidth: 640, videoHeight: 480 };
+
+  // Simulate 10 detector frames
+  for (let i = 0; i < 10; i++) {
+    mockVideo.currentTime = i;
+    detector.detectFrame(mockVideo, 1000 + i * 33);
+  }
+
+  // Spy: count how many times persistDiagnosticsLocally is invoked by getDiagnostics()
+  let persistCallCount = 0;
+  const originalPersist = detector.persistDiagnosticsLocally.bind(detector);
+  detector.persistDiagnosticsLocally = () => {
+    persistCallCount++;
+    originalPersist();
+  };
+
+  // Call getDiagnostics() 10 times (simulating the 500ms UI tick polling 10×)
+  for (let i = 0; i < 10; i++) {
+    detector.getDiagnostics(mockVideo);
+  }
+
+  // MUST be 0 — getDiagnostics() must be a pure read, never writing to storage
+  assert.equal(persistCallCount, 0,
+    `getDiagnostics() must not call persistDiagnosticsLocally(), but called it ${persistCallCount} time(s)`);
+});
+
+test('persistDiagnosticsLocally() writes to localStorage only when explicitly called', (t) => {
+  const detector = new BlinkDetector();
+  const mockFace = new Array(468).fill({x: 0.5, y: 0.5, z: 0.1});
+  detector.landmarker = { detectForVideo: () => ({ faceLandmarks: [mockFace] }) };
+
+  const mockVideo = { currentTime: 0, videoWidth: 640, videoHeight: 480 };
+
+  // Spy on persistDiagnosticsLocally before any activity
+  let persistCallCount = 0;
+  const originalPersist = detector.persistDiagnosticsLocally.bind(detector);
+  detector.persistDiagnosticsLocally = () => {
+    persistCallCount++;
+    originalPersist();
+  };
+
+  // Simulate detector activity
+  mockVideo.currentTime = 0;
+  detector.detectFrame(mockVideo, 1000);
+  detector.getDiagnostics(mockVideo);
+
+  // No implicit calls — only an explicit call should trigger it
+  assert.equal(persistCallCount, 0, 'No writes before explicit persistDiagnosticsLocally() call');
+
+  // Explicitly call persistDiagnosticsLocally()
+  detector.persistDiagnosticsLocally();
+  assert.equal(persistCallCount, 1, 'persistDiagnosticsLocally() should write exactly once when explicitly called');
+});
+
+test('export functionality still works: getDiagnostics() returns complete diagnostics object', (t) => {
+  const detector = new BlinkDetector();
+  const mockFace = new Array(468).fill({x: 0.5, y: 0.5, z: 0.1});
+  detector.landmarker = { detectForVideo: () => ({ faceLandmarks: [mockFace] }) };
+
+  const mockVideo = {
+    currentTime: 0,
+    videoWidth: 640,
+    videoHeight: 480,
+    srcObject: {
+      getVideoTracks: () => [{
+        getSettings: () => ({
+          width: 640,
+          height: 480,
+          frameRate: 30,
+          facingMode: 'user'
+        })
+      }]
+    },
+  };
+
+  // Simulate detector activity
+  for (let i = 0; i < 60; i++) {
+    mockVideo.currentTime = i;
+    detector.detectFrame(mockVideo, 1000 + i * 33);
+  }
+
+  // Get diagnostics for export
+  const diag = detector.getDiagnostics(mockVideo);
+
+  // Verify complete diagnostics are available
+  assert.ok(diag.camera, 'Should have camera info');
+  assert.ok(diag.decodedFps !== undefined, 'Should have decodedFps');
+  assert.ok(diag.processedFps !== undefined, 'Should have processedFps');
+  assert.ok(diag.longestFrameGapMs !== undefined, 'Should have longestFrameGapMs');
+  assert.ok(diag.freezeCount !== undefined, 'Should have freezeCount');
+  assert.ok(Array.isArray(diag.timeline), 'Should have timeline array');
+  assert.ok(diag.lastLandmarkTimestampMs !== null, 'Should have landmark timestamp');
+
+  // Verify that calling getDiagnostics multiple times returns consistent data
+  const diag2 = detector.getDiagnostics(mockVideo);
+  assert.equal(diag2.decodedFps, diag.decodedFps, 'Multiple calls should return consistent data');
+  assert.equal(diag2.processedFps, diag.processedFps, 'Multiple calls should return consistent data');
+});

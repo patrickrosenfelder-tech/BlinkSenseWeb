@@ -268,7 +268,6 @@ export class BlinkDetector {
       timeline: [...this.timeline],
       ...this.machine.getDiagnostics(),
     };
-    this.persistDiagnosticsLocally();
     return diag;
   }
 }

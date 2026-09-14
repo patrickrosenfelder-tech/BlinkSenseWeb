@@ -473,6 +473,21 @@ document.addEventListener('visibilitychange', async () => {
   }
 });
 
+// Persist a diagnostics snapshot on pagehide (fires before navigation/tab close on iOS Safari
+// and modern browsers, unlike beforeunload). This ensures the export survives page unload
+// even if stopMonitoring() is never called (e.g. when the detector freezes and the user
+// navigates away to find the export button on reload).
+window.addEventListener('pagehide', () => {
+  if (running || sessionStart) {
+    try {
+      localStorage.setItem('blinksense-diagnostics', JSON.stringify(detector.getDiagnostics(els.video), null, 2));
+    } catch {
+      // Silently ignore quota/security errors on unload
+    }
+  }
+});
+
+
 // ---------- History ----------
 
 function formatDuration(ms) {
