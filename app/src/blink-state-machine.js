@@ -4,7 +4,11 @@ const DEFAULT_OPEN_EAR = 0.28; // conservative safe default pending per-session 
 const CLOSE_RATIO = 0.72;
 const REOPEN_RATIO = 0.82;
 const MIN_CLOSURE_MS = 80;
-const MAX_CLOSURE_MS = 600; // A blink held longer than this is stale/impossible; reset to open
+// Adaptive stale-closure expiry: base threshold for >=30 FPS; scales proportionally
+// for low-FPS sensors (e.g. 3.67 FPS Android) where a sampled blink can legitimately
+// span 635–1270ms because the open event is detected 2–4 frame-intervals later.
+const BASE_MAX_CLOSURE_MS = 600;
+const STALE_FRAMES_THRESHOLD = 8; // Number of frame-intervals that constitute a stale closure
 const REFRACTORY_MS = 180;
 const MAX_EVENTS = 200;
 const STABILITY_THRESHOLD_MOTION = 0.00005; // Motion above this indicates instability
@@ -23,6 +27,8 @@ export class BlinkStateMachine {
     this.rejectedEvents = [];
     this.warmupUntil = null;
     this.stabilityFrames = []; // Track recent motion/yaw for stability gating
+    this.lastProcessedTimestampMs = null; // For adaptive expiry based on observed FPS
+    this.lastFrameIntervalMs = 0;         // Most recent inter-frame gap (ms)
   }
 
   resetTracking() {
@@ -31,6 +37,8 @@ export class BlinkStateMachine {
     this.closedAt = null;
     this.warmupUntil = null;
     this.stabilityFrames = [];
+    this.lastProcessedTimestampMs = null;
+    // lastFrameIntervalMs is intentionally preserved: device FPS does not change on tracking reset.
   }
 
   isLandmarkStable() {
@@ -91,9 +99,20 @@ export class BlinkStateMachine {
       }
     }
 
+    // Track inter-frame interval for adaptive stale-closure expiry.
+    // Freeze gaps (>2000ms) are excluded so watchdog resets don't inflate the estimate.
+    if (this.lastProcessedTimestampMs !== null) {
+      const interval = timestampMs - this.lastProcessedTimestampMs;
+      if (interval > 0 && interval < 2000) this.lastFrameIntervalMs = interval;
+    }
+    this.lastProcessedTimestampMs = timestampMs;
+
     // Expiry is evaluated BEFORE the stability gate so that sustained instability
     // (e.g. head-shaking while eye appears closed) cannot permanently defer the reset.
-    if (this.state === 'closed' && (timestampMs - this.closedAt) > MAX_CLOSURE_MS) {
+    // The threshold scales with observed FPS: at 3 FPS (333ms interval) effectiveMax=2664ms;
+    // at 30 FPS (33ms interval) effectiveMax=600ms — preserving prior behaviour.
+    const effectiveMaxClosureMs = Math.max(BASE_MAX_CLOSURE_MS, this.lastFrameIntervalMs * STALE_FRAMES_THRESHOLD);
+    if (this.state === 'closed' && (timestampMs - this.closedAt) > effectiveMaxClosureMs) {
       this.record(this.rejectedEvents, { timestampMs, reason: 'closure_expired', durationMs: timestampMs - this.closedAt });
       this.state = 'open';
       this.closedAt = null;

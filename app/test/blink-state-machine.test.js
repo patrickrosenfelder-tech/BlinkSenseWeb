@@ -180,3 +180,81 @@ test('explicit stability gate: unstable head motion cannot enter/complete a blin
   assert.equal(res.decision, 'accepted_blink', 'Stable blink should be accepted');
   assert.equal(machine.blinkCount, 1);
 });
+
+// PAT-894: at 3.67 FPS (production Android), sampled closure durations are always 635–1270ms
+// because 2–4 consecutive low-FPS frames are needed to observe the reopen. The fixed
+// MAX_CLOSURE_MS=600 rejects ALL real blinks at this FPS. Tests below prove the fix.
+
+test('PAT-894: counts blink at 3 FPS when sampled closure duration is 666ms (> original 600ms)', () => {
+  const machine = new BlinkStateMachine();
+  // Warmup
+  frame(machine, 0, OPEN_EAR);
+  // Establish 3 FPS cadence (333ms intervals) so the state machine knows the frame rate
+  frame(machine, 600, OPEN_EAR);  // interval=600ms (warmup gap, primes tracker)
+  frame(machine, 933, OPEN_EAR);  // interval=333ms ← 3 FPS cadence established
+  frame(machine, 1266, OPEN_EAR); // interval=333ms
+
+  // Close: closedAt=1599
+  let r = frame(machine, 1599, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+  // Still closed one frame later (333ms): sampled duration = 333ms so far
+  r = frame(machine, 1932, CLOSED_EAR);
+  // Reopen at t=2265: sampled durationMs = 2265-1599 = 666ms > original MAX_CLOSURE_MS=600ms
+  r = frame(machine, 2265, OPEN_EAR);
+  assert.equal(r.decision, 'accepted_blink',
+    '666ms sampled closure at 3 FPS must be accepted (physiologically valid blink, artifact of low FPS sampling)');
+  assert.equal(machine.blinkCount, 1);
+});
+
+test('PAT-894: counts blink at 5 FPS when sampled closure duration is 1000ms (> original 600ms)', () => {
+  const machine = new BlinkStateMachine();
+  // Warmup
+  frame(machine, 0, OPEN_EAR);
+  // Establish 5 FPS cadence (200ms intervals)
+  frame(machine, 600, OPEN_EAR);  // warmup gap
+  frame(machine, 800, OPEN_EAR);  // interval=200ms ← 5 FPS cadence
+  frame(machine, 1000, OPEN_EAR); // interval=200ms
+
+  // Close: closedAt=1200
+  let r = frame(machine, 1200, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+  frame(machine, 1400, CLOSED_EAR); // 200ms
+  frame(machine, 1600, CLOSED_EAR); // 400ms
+  frame(machine, 1800, CLOSED_EAR); // 600ms (boundary — no expiry yet at strict >)
+  frame(machine, 2000, CLOSED_EAR); // 800ms — current code: EXPIRES here → RED
+  // Reopen at t=2200: sampled durationMs = 2200-1200 = 1000ms > original MAX_CLOSURE_MS=600ms
+  r = frame(machine, 2200, OPEN_EAR);
+  assert.equal(r.decision, 'accepted_blink',
+    '1000ms sampled closure at 5 FPS must be accepted (physiologically valid blink, artifact of low FPS sampling)');
+  assert.equal(machine.blinkCount, 1);
+});
+
+test('PAT-894: stale multi-second closure at 3 FPS is still rejected and resets to open', () => {
+  const machine = new BlinkStateMachine();
+  // Warmup
+  frame(machine, 0, OPEN_EAR);
+  // Establish 3 FPS cadence
+  frame(machine, 600, OPEN_EAR);
+  frame(machine, 933, OPEN_EAR);
+  frame(machine, 1266, OPEN_EAR);
+
+  // Close: eye never reopens — should expire well before 7000ms
+  frame(machine, 1599, CLOSED_EAR);
+
+  let expiryDecision = null;
+  let expiryTs = null;
+  for (let t = 1932; t <= 7000; t += 333) {
+    const r = frame(machine, t, CLOSED_EAR);
+    if (r.decision === 'rejected_closure_expired') {
+      expiryDecision = r.decision;
+      expiryTs = t;
+      break;
+    }
+  }
+
+  assert.ok(expiryDecision !== null, 'Multi-second stale closure at 3 FPS must still expire');
+  assert.equal(machine.state, 'open', 'State must reset to open after stale expiry');
+  assert.equal(machine.blinkCount, 0, 'Stale closure must not count as a blink');
+  // Expiry must occur after many seconds (not prematurely at 600ms), i.e., after a genuine stale period
+  assert.ok(expiryTs > 3000, `Expiry at ${expiryTs}ms must be well past 3 seconds to allow real low-FPS blinks`);
+});
