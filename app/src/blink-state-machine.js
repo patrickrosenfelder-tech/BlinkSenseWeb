@@ -11,17 +11,27 @@ const BASE_MAX_CLOSURE_MS = 600;
 const STALE_FRAMES_THRESHOLD = 8; // Number of frame-intervals that constitute a stale closure
 const REFRACTORY_MS = 180;
 const MAX_EVENTS = 200;
-const STABILITY_THRESHOLD_MOTION = 0.00005; // Motion above this indicates instability
-const STABILITY_THRESHOLD_YAW = 0.05; // Yaw above this indicates instability
+const STABILITY_THRESHOLD_MOTION = 0.00005; // Motion above this indicates instability (for baseline adapt)
+const STABILITY_THRESHOLD_YAW = 0.05; // Yaw above this indicates instability (for baseline adapt)
 const STABILITY_WINDOW_MS = 150; // Window for measuring stability
+// PAT-925 Fix 2: Closure ENTRY gate. Higher than STABILITY_THRESHOLD_* so that slow deliberate
+// head movement still allows blinks; only fast shaking (>0.001 velocity) blocks new closures.
+const CLOSURE_ENTRY_MOTION_THRESHOLD = 0.001; // strict > : motion=0.001 is allowed, 0.005 is not
+const CLOSURE_ENTRY_YAW_THRESHOLD = 0.20;     // strict > : yaw=0.20 is allowed, 0.25 is not
+// PAT-925 Fix 3: Reopen must reach >= 75% of warmup baseline; EWMA adapts only from
+// frames >= 80% of initial baseline so squinting-while-stable cannot erode thresholds.
+const MIN_REOPEN_RATIO = 0.75;   // belt-and-suspenders floor on the acceptance path
+const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
 
 export class BlinkStateMachine {
   constructor({ defaultOpenEar = DEFAULT_OPEN_EAR } = {}) {
     this.defaultOpenEar = defaultOpenEar;
     this.openBaseline = 0.0;
+    this.initialBaseline = 0.0;  // PAT-925: set once at warmup; never reset; used as reopen floor
     this.state = 'open';
     this.closedAt = null;
-    this.lastAcceptedAt = -Infinity;
+    this.lastClosureStartedAt = -Infinity; // PAT-925 Fix 1: refractory compares close-to-close
+    this.lastAcceptedAt = -Infinity;       // kept for diagnostics/observability
     this.blinkCount = 0;
     this.acceptedEvents = [];
     this.rejectedEvents = [];
@@ -38,23 +48,40 @@ export class BlinkStateMachine {
     this.warmupUntil = null;
     this.stabilityFrames = [];
     this.lastProcessedTimestampMs = null;
-    // lastFrameIntervalMs is intentionally preserved: device FPS does not change on tracking reset.
+    this.lastClosureStartedAt = -Infinity; // reset so next blink can start immediately
+    // lastFrameIntervalMs preserved: device FPS does not change on tracking reset.
+    // initialBaseline NOT reset: it captures session-level warmup calibration.
   }
 
   isLandmarkStable() {
-    // Landmarks are stable if recent frames show consistently low motion and low yaw
-    if (this.stabilityFrames.length === 0) return true; // Assume stable if no data yet
+    // Landmarks are stable if recent frames show consistently low motion and low yaw.
+    // Used for: baseline EWMA adaptation guard. Uses tight thresholds.
+    if (this.stabilityFrames.length === 0) return true;
 
     const now = this.stabilityFrames[this.stabilityFrames.length - 1].timestampMs;
     const recentWindow = this.stabilityFrames.filter(f => (now - f.timestampMs) < STABILITY_WINDOW_MS);
-
-    // If we don't have enough recent frames, check just the last few frames
     const framesToCheck = recentWindow.length >= 2 ? recentWindow : this.stabilityFrames.slice(-3);
     if (framesToCheck.length === 0) return true;
 
-    // Check if any recent frame shows instability
     for (const frame of framesToCheck) {
       if (Math.abs(frame.yawProxy) > STABILITY_THRESHOLD_YAW || frame.motion > STABILITY_THRESHOLD_MOTION) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // PAT-925 Fix 2: Closure ENTRY stability gate. Uses higher thresholds than isLandmarkStable()
+  // so slow deliberate head movement allows blinks but fast shaking blocks new closure entry.
+  // Critically: this is NEVER called on the reopen path — started closures always complete.
+  isClosureEntryStable() {
+    if (this.stabilityFrames.length === 0) return true;
+    const now = this.stabilityFrames[this.stabilityFrames.length - 1].timestampMs;
+    const recentWindow = this.stabilityFrames.filter(f => (now - f.timestampMs) < STABILITY_WINDOW_MS);
+    const framesToCheck = recentWindow.length >= 2 ? recentWindow : this.stabilityFrames.slice(-3);
+    if (framesToCheck.length === 0) return true;
+    for (const frame of framesToCheck) {
+      if (frame.motion > CLOSURE_ENTRY_MOTION_THRESHOLD || Math.abs(frame.yawProxy) > CLOSURE_ENTRY_YAW_THRESHOLD) {
         return false;
       }
     }
@@ -85,6 +112,7 @@ export class BlinkStateMachine {
 
     if (this.openBaseline === 0.0) {
       this.openBaseline = ear;
+      this.initialBaseline = ear; // PAT-925: capture warmup-level baseline; never reset
       this.warmupUntil = timestampMs + 500;
     }
 
@@ -92,6 +120,7 @@ export class BlinkStateMachine {
       if (timestampMs < this.warmupUntil) {
         if (ear > this.openBaseline) {
           this.openBaseline = ear;
+          this.initialBaseline = ear; // track peak EAR seen during warmup
         }
         return { blinked: false, decision: 'warmup' };
       } else {
@@ -127,17 +156,29 @@ export class BlinkStateMachine {
     const isClosed = ear <= currentCloseThreshold;
     const isOpen = ear >= currentReopenThreshold;
 
-    // Adapt only from confidently open frames. Slow EWMA prevents a blink or
-    // startup closed eye from poisoning the per-session baseline.
-    if (isOpen && stable) this.openBaseline = this.openBaseline * 0.95 + ear * 0.05;
+    // PAT-925 Fix 3: Adapt only from confidently open frames that are also above the
+    // MIN_ADAPT_EAR_RATIO floor relative to warmup baseline. This prevents stable
+    // squinting frames from eroding openBaseline and collapsing close/reopen thresholds.
+    if (isOpen && stable && (this.initialBaseline === 0 || ear >= MIN_ADAPT_EAR_RATIO * this.initialBaseline)) {
+      this.openBaseline = this.openBaseline * 0.95 + ear * 0.05;
+    }
 
     if (this.state === 'open' && isClosed) {
-      if (timestampMs - this.lastAcceptedAt < REFRACTORY_MS) {
+      // PAT-925 Fix 2: Gate new closure entry on high-velocity motion. The reopen path
+      // is NEVER gated — a closure already in progress always completes.
+      if (!this.isClosureEntryStable()) {
+        return { blinked: false, decision: 'rejected_unstable' };
+      }
+      // PAT-925 Fix 1: Compare close-to-close (lastClosureStartedAt) instead of
+      // reopen-to-close (lastAcceptedAt). A deliberate double blink has ~200ms between
+      // closes but only ~50ms from first reopen to second close — the old gate blocked it.
+      if (timestampMs - this.lastClosureStartedAt < REFRACTORY_MS) {
         this.record(this.rejectedEvents, { timestampMs, reason: 'refractory_closure' });
         return { blinked: false, decision: 'rejected_refractory' };
       }
       this.state = 'closed';
       this.closedAt = timestampMs;
+      this.lastClosureStartedAt = timestampMs; // PAT-925: anchor for next refractory check
       return { blinked: false, decision: 'closure_started' };
     }
 
@@ -148,6 +189,14 @@ export class BlinkStateMachine {
       if (durationMs < MIN_CLOSURE_MS) {
         this.record(this.rejectedEvents, { timestampMs, reason: 'closure_too_short', durationMs });
         return { blinked: false, decision: 'rejected_short_closure' };
+      }
+      // PAT-925 Fix 3: belt-and-suspenders reopen floor. Requires EAR at reopen to be
+      // at least MIN_REOPEN_RATIO of the session's warmup baseline. Partial squeezes where
+      // the eye never returns to a genuinely open position are rejected regardless of
+      // how far the adapted openBaseline has drifted.
+      if (this.initialBaseline > 0 && ear < MIN_REOPEN_RATIO * this.initialBaseline) {
+        this.record(this.rejectedEvents, { timestampMs, reason: 'partial_reopen', durationMs, ear });
+        return { blinked: false, decision: 'rejected_partial_reopen' };
       }
       this.blinkCount++;
       this.lastAcceptedAt = timestampMs;
@@ -164,6 +213,7 @@ export class BlinkStateMachine {
       blinkCount: this.blinkCount,
       state: this.state,
       openBaseline: this.openBaseline,
+      initialBaseline: this.initialBaseline,
       closeThreshold: this.closeThreshold,
       reopenThreshold: this.reopenThreshold,
       acceptedEvents: [...this.acceptedEvents],

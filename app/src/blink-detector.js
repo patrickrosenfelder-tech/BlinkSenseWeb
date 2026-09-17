@@ -45,6 +45,11 @@ export class BlinkDetector {
     this.lastMachineState = 'open';
     this.lastLandmarkTimestampMs = null;
     this.detectorClosedAt = null;
+    // PAT-925 Fix 4: face-not-found span tracking (privacy-safe scalars only).
+    this.faceNotFoundFrames = 0;   // total decoded frames where MediaPipe returned no landmarks
+    this.consecutiveMisses = 0;    // current streak of no-face frames (resets on face found)
+    this.longestFaceDropMs = 0;    // longest single continuous face-not-found span in ms
+    this.faceDropStartMs = null;   // timestamp when current drop span began
   }
 
   async load() {
@@ -83,6 +88,10 @@ export class BlinkDetector {
     this.lastMachineState = 'open';
     this.lastLandmarkTimestampMs = null;
     this.detectorClosedAt = null;
+    this.faceNotFoundFrames = 0;
+    this.consecutiveMisses = 0;
+    this.longestFaceDropMs = 0;
+    this.faceDropStartMs = null;
   }
 
   resetSession() {
@@ -99,6 +108,10 @@ export class BlinkDetector {
     this.lastMachineState = 'open';
     this.lastLandmarkTimestampMs = null;
     this.detectorClosedAt = null;
+    this.faceNotFoundFrames = 0;
+    this.consecutiveMisses = 0;
+    this.longestFaceDropMs = 0;
+    this.faceDropStartMs = null;
   }
 
   addTimelineEvent(event) {
@@ -175,11 +188,34 @@ export class BlinkDetector {
 
     const landmarks = result.faceLandmarks?.[0];
     if (!landmarks) {
+      // PAT-925 Fix 4: count face-not-found frames and emit span events so Android dropout
+      // is distinguishable from rAF stalls (freezeCount) and exceptions (mediapipe_exception).
+      this.faceNotFoundFrames++;
+      this.consecutiveMisses++;
+      // Emit a span-start event on the 5th consecutive miss (~150ms at 30 FPS).
+      if (this.consecutiveMisses === 5) {
+        this.faceDropStartMs = this.lastTimestampMs ?? timestampMs;
+        this.addTimelineEvent({ type: 'face_not_found_span', timestampMs: this.faceDropStartMs });
+      }
+      if (this.faceDropStartMs !== null) {
+        // Track the longest drop live, since a span may never resolve within the session.
+        const ongoingGapMs = timestampMs - this.faceDropStartMs;
+        if (ongoingGapMs > this.longestFaceDropMs) this.longestFaceDropMs = ongoingGapMs;
+      }
       this.machine.resetTracking();
       this.lastTimestampMs = timestampMs;
       if (this.callbackCount % 60 === 0) this.logCadence(timestampMs, invokeDuration);
       return { faceFound: false };
     }
+
+    // Face found — close out any active face-dropout span.
+    if (this.consecutiveMisses >= 5 && this.faceDropStartMs !== null) {
+      const gapMs = timestampMs - this.faceDropStartMs;
+      if (gapMs > this.longestFaceDropMs) this.longestFaceDropMs = gapMs;
+      this.addTimelineEvent({ type: 'face_found_resume', timestampMs, gapMs });
+      this.faceDropStartMs = null;
+    }
+    this.consecutiveMisses = 0;
 
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -273,6 +309,9 @@ export class BlinkDetector {
       longestFrameGapMs: this.longestFrameGapMs,
       freezeCount: this.freezeCount,
       lastLandmarkTimestampMs: this.lastLandmarkTimestampMs,
+      // PAT-925 Fix 4: face-not-found span scalars — distinct from rAF stalls and exceptions.
+      faceNotFoundFrames: this.faceNotFoundFrames,
+      longestFaceDropMs: this.longestFaceDropMs,
       timeline: [...this.timeline],
       ...this.machine.getDiagnostics(),
     };

@@ -329,3 +329,89 @@ test('PAT-897: 3D eyeAspectRatio is invariant under head yaw rotation', (t) => {
   const earClosed = eyeAspectRatio3D(closedEye, [0, 1, 2, 3, 4, 5], width, height);
   assert.ok(earClosed < earStraight * 0.6, `closed EAR (${earClosed.toFixed(3)}) must be far below open EAR (${earStraight.toFixed(3)})`);
 });
+
+// PAT-925 Fix 4: face-not-found spans must be tracked separately from rAF/video stalls
+// and inference exceptions — privacy-safe scalars + timeline event only.
+test('PAT-925: face-not-found frames produce scalar counter and face_not_found_span timeline event', (t) => {
+  const detector = new BlinkDetector();
+  // Return empty landmarks (face not detected) on every call.
+  detector.landmarker = {
+    detectForVideo: () => ({ faceLandmarks: [], facialTransformationMatrixes: [] })
+  };
+
+  const mockVideo = {
+    currentTime: 0,
+    videoWidth: 640,
+    videoHeight: 480,
+    paused: false,
+    play: async () => {}
+  };
+
+  // Feed 10 decoded frames with no face found (advancing currentTime each time).
+  for (let i = 0; i < 10; i++) {
+    mockVideo.currentTime = i + 1; // unique currentTime each frame
+    detector.detectFrame(mockVideo, 1000 + i * 100);
+  }
+
+  const diag = detector.getDiagnostics(mockVideo);
+
+  // PAT-925 RED: faceNotFoundFrames and longestFaceDropMs do not exist yet.
+  assert.ok('faceNotFoundFrames' in diag,
+    'getDiagnostics must expose faceNotFoundFrames scalar');
+  assert.equal(diag.faceNotFoundFrames, 10,
+    'All 10 frames with no landmarks must be counted');
+
+  assert.ok('longestFaceDropMs' in diag,
+    'getDiagnostics must expose longestFaceDropMs scalar');
+  assert.ok(diag.longestFaceDropMs > 0,
+    'longestFaceDropMs must be > 0 after 10 consecutive no-face frames');
+
+  // A face_not_found_span event must appear in the timeline after enough consecutive misses.
+  const spanEvents = diag.timeline.filter(e => e.type === 'face_not_found_span');
+  assert.ok(spanEvents.length > 0,
+    'face_not_found_span timeline event must be emitted on consecutive face-not-found frames');
+
+  // Verify no landmark data is stored (privacy: only scalars allowed).
+  for (const event of diag.timeline) {
+    assert.ok(!('landmarks' in event), 'Timeline events must never contain raw landmark data');
+  }
+});
+
+// PAT-925 Fix 4: face_found_resume event fires when face re-appears after a dropout span.
+test('PAT-925: face_found_resume fires when landmarks re-appear after a face_not_found_span', (t) => {
+  const detector = new BlinkDetector();
+  let returnFace = false;
+  const mockFace = new Array(468).fill({ x: 0.5, y: 0.5, z: 0.0 });
+  detector.landmarker = {
+    detectForVideo: () => ({
+      faceLandmarks: returnFace ? [mockFace] : [],
+      facialTransformationMatrixes: []
+    })
+  };
+
+  const mockVideo = {
+    currentTime: 0,
+    videoWidth: 640,
+    videoHeight: 480,
+    paused: false,
+    play: async () => {}
+  };
+
+  // 8 frames with no face (triggers span event at frame 5).
+  for (let i = 0; i < 8; i++) {
+    mockVideo.currentTime = i + 1;
+    detector.detectFrame(mockVideo, 1000 + i * 100);
+  }
+
+  // Face re-appears.
+  returnFace = true;
+  mockVideo.currentTime = 9;
+  detector.detectFrame(mockVideo, 1800);
+
+  const diag = detector.getDiagnostics(mockVideo);
+  const resumeEvents = diag.timeline.filter(e => e.type === 'face_found_resume');
+  assert.ok(resumeEvents.length > 0,
+    'face_found_resume must be logged when face re-appears after a dropout span');
+  assert.ok('gapMs' in resumeEvents[0],
+    'face_found_resume must include gapMs field describing dropout duration');
+});

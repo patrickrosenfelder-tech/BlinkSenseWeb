@@ -74,19 +74,22 @@ test('enforces refractory period (debounce) for rapid successive closures', () =
   const machine = new BlinkStateMachine();
   frame(machine, 0, OPEN_EAR);
 
-  // First valid blink (lasts 100ms)
+  // First valid blink: closes at t=1100, reopens at t=1250.
+  // lastClosureStartedAt = 1100 (new semantic: compare next CLOSE start to prior CLOSE start).
   for (let time = 1100; time <= 1200; time += 20) frame(machine, time, CLOSED_EAR);
   frame(machine, 1250, OPEN_EAR);
   assert.equal(machine.blinkCount, 1);
 
-  // Second closure within refractory period (refractory is 180ms, lastAcceptedAt = 1250)
-  const res = frame(machine, 1350, CLOSED_EAR);
-  assert.equal(res.decision, 'rejected_refractory');
+  // Second closure at t=1200+1100=1200: close-to-close gap = 1200-1100 = 100ms < REFRACTORY_MS=180ms.
+  // This represents reopen-jitter / same-blink echo and must still be rejected.
+  const res = frame(machine, 1200, CLOSED_EAR);
+  assert.equal(res.decision, 'rejected_refractory',
+    'Close-to-close gap of 100ms must be rejected as refractory jitter');
   assert.equal(machine.getDiagnostics().state, 'open');
 
-  // Close after refractory period
-  frame(machine, 1450, CLOSED_EAR);
-  frame(machine, 1600, OPEN_EAR);
+  // A third closure with close-to-close gap > 180ms (1100+200=1300) must succeed.
+  frame(machine, 1300, CLOSED_EAR);
+  frame(machine, 1450, OPEN_EAR);
   assert.equal(machine.blinkCount, 2);
 });
 
@@ -268,4 +271,139 @@ test('PAT-894: stale multi-second closure at 3 FPS is still rejected and resets 
   assert.equal(machine.blinkCount, 0, 'Stale closure must not count as a blink');
   // Expiry must occur after many seconds (not prematurely at 600ms), i.e., after a genuine stale period
   assert.ok(expiryTs > 3000, `Expiry at ${expiryTs}ms must be well past 3 seconds to allow real low-FPS blinks`);
+});
+
+// ─── PAT-925 RED TESTS ──────────────────────────────────────────────────────
+// These must FAIL before the production fix is applied (strict TDD).
+
+// Fix 1: Refractory gate must compare close-to-close, not reopen-to-close.
+// At 60 FPS a deliberate double-blink has ~200ms between CLOSES but only ~50ms
+// between blink-1 REOPEN and blink-2 CLOSE — the current code blocks it wrongly.
+test('PAT-925: rapid double blink (200ms close-to-close, >REFRACTORY_MS) counts as 2', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);    // warmup; initialBaseline = OPEN_EAR = 0.30
+  frame(machine, 600, OPEN_EAR);  // first post-warmup frame
+
+  // Blink 1: closes at t=700, reopens at t=800. lastClosureStartedAt=700.
+  let r = frame(machine, 700, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+  r = frame(machine, 800, OPEN_EAR); // 100ms closure — accepted
+  assert.equal(r.decision, 'accepted_blink', 'Blink 1 must be accepted');
+  assert.equal(machine.blinkCount, 1);
+
+  // Blink 2: closes at t=900 (close-to-close gap = 900-700 = 200ms > REFRACTORY_MS=180ms).
+  // Reopen-to-close gap = 900-800 = 100ms (old code would reject this as 100 < 180).
+  r = frame(machine, 900, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started',
+    'Second blink closing 200ms after first close must not be rejected as refractory');
+  r = frame(machine, 1000, OPEN_EAR);
+  assert.equal(r.decision, 'accepted_blink', 'Blink 2 must be accepted');
+  assert.equal(machine.blinkCount, 2, 'Both rapid deliberate blinks must count as 2');
+});
+
+// Fix 1 companion: truly rapid jitter (close-to-close gap 80ms < REFRACTORY_MS) is still blocked.
+test('PAT-925: reopen jitter (80ms close-to-close gap) is still blocked by refractory', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  // Blink 1: closes at t=700, reopens at t=800.
+  frame(machine, 700, CLOSED_EAR);
+  frame(machine, 800, OPEN_EAR);
+  assert.equal(machine.blinkCount, 1);
+
+  // Jitter closure at t=780 (close-to-close = 780-700 = 80ms < 180ms) must be blocked.
+  const r = frame(machine, 780, CLOSED_EAR);
+  assert.equal(r.decision, 'rejected_refractory',
+    'Close-to-close gap of 80ms must be blocked as refractory jitter');
+  assert.equal(machine.blinkCount, 1);
+});
+
+// Fix 2: Fast head shake (high-velocity motion) must block new closure entry;
+// an already-started closure must still be able to reopen through motion.
+test('PAT-925: fast head shake (motion > gate threshold) blocks new closure entry, counts 0', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  // Feed frames with EAR drop + high motion — closure entry must be blocked.
+  for (let t = 650; t <= 1200; t += 16) {
+    const r = machine.process({ timestampMs: t, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.005 });
+    assert.notEqual(r.decision, 'closure_started',
+      `High-motion closure entry must be blocked at t=${t}`);
+    assert.notEqual(r.decision, 'accepted_blink');
+  }
+  assert.equal(machine.blinkCount, 0, 'Fast head shake must count 0 blinks');
+});
+
+// Fix 2: Slow head movement (motion below gate) must allow genuine blinks.
+test('PAT-925: genuine blink during slow head movement (low motion) counts as 1', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  let r = machine.process({ timestampMs: 700, ear: CLOSED_EAR, yawProxy: 0.05, motion: 0.0002 });
+  assert.equal(r.decision, 'closure_started',
+    'Closure must be allowed when motion is below the gate threshold');
+  r = machine.process({ timestampMs: 850, ear: OPEN_EAR, yawProxy: 0.05, motion: 0.0002 });
+  assert.equal(r.decision, 'accepted_blink',
+    'Genuine blink during slow head movement must count');
+  assert.equal(machine.blinkCount, 1);
+});
+
+// Fix 2: A closure started before a motion spike must still be allowed to complete.
+test('PAT-925: closure started before motion spike reopens through high motion and counts', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  let r = frame(machine, 700, CLOSED_EAR);
+  assert.equal(r.decision, 'closure_started');
+
+  machine.process({ timestampMs: 730, ear: CLOSED_EAR, yawProxy: 0.3, motion: 0.01 });
+  machine.process({ timestampMs: 760, ear: CLOSED_EAR, yawProxy: 0.3, motion: 0.01 });
+
+  r = machine.process({ timestampMs: 850, ear: OPEN_EAR, yawProxy: 0.3, motion: 0.01 });
+  assert.equal(r.decision, 'accepted_blink',
+    'Reopen of a pre-motion closure must be accepted regardless of current motion');
+  assert.equal(machine.blinkCount, 1);
+});
+
+// Fix 3: Partial squeeze (reopen EAR below initialBaseline floor) must count 0.
+test('PAT-925: partial squeeze after baseline drift counts 0 (rejected_partial_reopen)', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR); // initialBaseline = 0.30
+
+  // Drift baseline: 200 frames at EAR=0.25. isOpen(0.25>=0.246), baseline → 0.25.
+  for (let i = 0; i < 200; i++) {
+    machine.process({ timestampMs: 600 + i * 16, ear: 0.25, yawProxy: 0, motion: 0 });
+  }
+
+  const t0 = 600 + 200 * 16; // 3800ms
+  machine.process({ timestampMs: t0 + 100, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  // EAR=0.21 >= drifted reopenThreshold(≈0.205) but below floor(0.75*0.30=0.225).
+  const r = machine.process({ timestampMs: t0 + 300, ear: 0.21, yawProxy: 0, motion: 0 });
+
+  // Without fix: accepted_blink (blinkCount=1). With fix: rejected_partial_reopen.
+  assert.equal(r.decision, 'rejected_partial_reopen',
+    'Reopen well below initial open baseline must be rejected as partial squeeze');
+  assert.equal(machine.blinkCount, 0, 'Partial squeeze must count 0 blinks');
+});
+
+// Fix 3 companion: genuine full-depth blink above the floor counts even after drift.
+test('PAT-925: genuine full blink above initialBaseline floor counts even after drift', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR); // initialBaseline = 0.30
+
+  for (let i = 0; i < 200; i++) {
+    machine.process({ timestampMs: 600 + i * 16, ear: 0.25, yawProxy: 0, motion: 0 });
+  }
+
+  const t0 = 600 + 200 * 16;
+  machine.process({ timestampMs: t0 + 100, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  // Full reopen at OPEN_EAR=0.30 >= 0.75*0.30=0.225 — must count.
+  const r = machine.process({ timestampMs: t0 + 300, ear: OPEN_EAR, yawProxy: 0, motion: 0 });
+  assert.equal(r.decision, 'accepted_blink',
+    'Genuine full-depth blink above floor must count even after baseline drift');
+  assert.equal(machine.blinkCount, 1);
 });
