@@ -103,6 +103,29 @@ export class BlinkStateMachine {
     if (list.length > MAX_EVENTS) list.shift();
   }
 
+  // PAT-935: every accepted/rejected candidate event carries this privacy-safe
+  // scalar diagnostic context (timestamps/EAR/motion/yaw/thresholds/state) —
+  // never frames or landmark coordinates.
+  buildDiagnosticEvent(reason, state, { timestampMs, ear, motion, yawProxy, extra = {} }) {
+    const closureDepthRatio = this.openBaseline > 0 ? ear / this.openBaseline : 0;
+    return {
+      timestampMs,
+      ear,
+      motion,
+      yawProxy,
+      closeThreshold: this.closeThreshold,
+      reopenThreshold: this.reopenThreshold,
+      state,
+      stable: this.isLandmarkStable(),
+      entryStable: this.isClosureEntryStable(),
+      initialBaseline: this.initialBaseline,
+      openBaseline: this.openBaseline,
+      closureDepthRatio,
+      reason,
+      ...extra,
+    };
+  }
+
   process({ timestampMs, ear, yawProxy = 0, motion = 0 }) {
     if (!Number.isFinite(timestampMs) || !Number.isFinite(ear)) return { blinked: false, decision: 'rejected_invalid_measurement' };
 
@@ -142,7 +165,9 @@ export class BlinkStateMachine {
     // at 30 FPS (33ms interval) effectiveMax=600ms — preserving prior behaviour.
     const effectiveMaxClosureMs = Math.max(BASE_MAX_CLOSURE_MS, this.lastFrameIntervalMs * STALE_FRAMES_THRESHOLD);
     if (this.state === 'closed' && (timestampMs - this.closedAt) > effectiveMaxClosureMs) {
-      this.record(this.rejectedEvents, { timestampMs, reason: 'closure_expired', durationMs: timestampMs - this.closedAt });
+      const durationMs = timestampMs - this.closedAt;
+      const event = this.buildDiagnosticEvent('closure_expired', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+      this.record(this.rejectedEvents, event);
       this.state = 'open';
       this.closedAt = null;
       return { blinked: false, decision: 'rejected_closure_expired' };
@@ -167,13 +192,16 @@ export class BlinkStateMachine {
       // PAT-925 Fix 2: Gate new closure entry on high-velocity motion. The reopen path
       // is NEVER gated — a closure already in progress always completes.
       if (!this.isClosureEntryStable()) {
+        const event = this.buildDiagnosticEvent('closure_entry_unstable', this.state, { timestampMs, ear, motion, yawProxy });
+        this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_unstable' };
       }
       // PAT-925 Fix 1: Compare close-to-close (lastClosureStartedAt) instead of
       // reopen-to-close (lastAcceptedAt). A deliberate double blink has ~200ms between
       // closes but only ~50ms from first reopen to second close — the old gate blocked it.
       if (timestampMs - this.lastClosureStartedAt < REFRACTORY_MS) {
-        this.record(this.rejectedEvents, { timestampMs, reason: 'refractory_closure' });
+        const event = this.buildDiagnosticEvent('refractory_closure', this.state, { timestampMs, ear, motion, yawProxy });
+        this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_refractory' };
       }
       this.state = 'closed';
@@ -187,7 +215,8 @@ export class BlinkStateMachine {
       this.state = 'open';
       this.closedAt = null;
       if (durationMs < MIN_CLOSURE_MS) {
-        this.record(this.rejectedEvents, { timestampMs, reason: 'closure_too_short', durationMs });
+        const event = this.buildDiagnosticEvent('closure_too_short', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+        this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_short_closure' };
       }
       // PAT-925 Fix 3: belt-and-suspenders reopen floor. Requires EAR at reopen to be
@@ -195,12 +224,13 @@ export class BlinkStateMachine {
       // the eye never returns to a genuinely open position are rejected regardless of
       // how far the adapted openBaseline has drifted.
       if (this.initialBaseline > 0 && ear < MIN_REOPEN_RATIO * this.initialBaseline) {
-        this.record(this.rejectedEvents, { timestampMs, reason: 'partial_reopen', durationMs, ear });
+        const event = this.buildDiagnosticEvent('partial_reopen', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+        this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_partial_reopen' };
       }
       this.blinkCount++;
       this.lastAcceptedAt = timestampMs;
-      const event = { timestampMs, durationMs, ear: Number(ear.toFixed(4)) };
+      const event = this.buildDiagnosticEvent('accepted_blink', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
       this.record(this.acceptedEvents, event);
       return { blinked: true, decision: 'accepted_blink', event };
     }

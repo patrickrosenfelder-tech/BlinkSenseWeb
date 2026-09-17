@@ -407,3 +407,141 @@ test('PAT-925: genuine full blink above initialBaseline floor counts even after 
     'Genuine full-depth blink above floor must count even after baseline drift');
   assert.equal(machine.blinkCount, 1);
 });
+
+// ─── PAT-935: candidate decision event scalar diagnostics ─────────────────
+// Every accepted/rejected candidate event must carry privacy-safe scalar
+// context: timestamp, EAR, motion, yawProxy, close/reopen thresholds,
+// state/stability/entry-gate decision, closure-depth/initial-baseline
+// context, and the accepted/rejected reason. No frames, images, or landmark
+// coordinates are ever persisted — only numbers.
+const PAT_935_REQUIRED_FIELDS = [
+  'timestampMs', 'ear', 'motion', 'yawProxy',
+  'closeThreshold', 'reopenThreshold',
+  'state', 'stable', 'entryStable',
+  'initialBaseline', 'openBaseline', 'closureDepthRatio',
+  'reason',
+];
+
+function assertCandidateEventDiagnostics(event, label) {
+  for (const field of PAT_935_REQUIRED_FIELDS) {
+    assert.ok(field in event, `${label} candidate event missing scalar diagnostic field "${field}"`);
+  }
+}
+
+test('PAT-935 RED: accepted candidate event carries full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+  machine.process({ timestampMs: 700, ear: CLOSED_EAR, yawProxy: 0.02, motion: 0.0001 });
+  const r = machine.process({ timestampMs: 850, ear: OPEN_EAR, yawProxy: 0.02, motion: 0.0001 });
+  assert.equal(r.decision, 'accepted_blink');
+
+  const accepted = machine.getDiagnostics().acceptedEvents;
+  assert.equal(accepted.length, 1);
+  assertCandidateEventDiagnostics(accepted[0], 'accepted');
+  assert.equal(accepted[0].reason, 'accepted_blink');
+});
+
+test('PAT-935 RED: rejected_refractory candidate event carries full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+  frame(machine, 700, CLOSED_EAR);
+  frame(machine, 800, OPEN_EAR);
+  const r = frame(machine, 780, CLOSED_EAR); // close-to-close gap 80ms < REFRACTORY_MS
+  assert.equal(r.decision, 'rejected_refractory');
+
+  const rejected = machine.getDiagnostics().rejectedEvents;
+  const event = rejected.find((e) => e.reason === 'refractory_closure');
+  assert.ok(event, 'refractory rejection must be recorded');
+  assertCandidateEventDiagnostics(event, 'rejected_refractory');
+});
+
+test('PAT-935 RED: rejected_short_closure candidate event carries full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 1050, CLOSED_EAR);
+  const r = frame(machine, 1100, OPEN_EAR); // 50ms micro-closure
+  assert.equal(r.decision, 'rejected_short_closure');
+
+  const rejected = machine.getDiagnostics().rejectedEvents;
+  const event = rejected.find((e) => e.reason === 'closure_too_short');
+  assert.ok(event, 'short-closure rejection must be recorded');
+  assertCandidateEventDiagnostics(event, 'rejected_short_closure');
+});
+
+test('PAT-935 RED: rejected_partial_reopen candidate event carries full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR); // initialBaseline = 0.30
+  for (let i = 0; i < 200; i++) {
+    machine.process({ timestampMs: 600 + i * 16, ear: 0.25, yawProxy: 0, motion: 0 });
+  }
+  const t0 = 600 + 200 * 16;
+  machine.process({ timestampMs: t0 + 100, ear: CLOSED_EAR, yawProxy: 0, motion: 0 });
+  const r = machine.process({ timestampMs: t0 + 300, ear: 0.21, yawProxy: 0, motion: 0 });
+  assert.equal(r.decision, 'rejected_partial_reopen');
+
+  const rejected = machine.getDiagnostics().rejectedEvents;
+  const event = rejected.find((e) => e.reason === 'partial_reopen');
+  assert.ok(event, 'partial-reopen rejection must be recorded');
+  assertCandidateEventDiagnostics(event, 'rejected_partial_reopen');
+});
+
+test('PAT-935 RED: rejected_closure_expired candidate event carries full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 1050, OPEN_EAR); // past warmup
+  frame(machine, 1100, CLOSED_EAR);
+
+  let expiryEvent = null;
+  for (let t = 1150; t <= 1900; t += 50) {
+    const r = frame(machine, t, CLOSED_EAR);
+    if (r.decision === 'rejected_closure_expired') {
+      expiryEvent = r;
+      break;
+    }
+  }
+  assert.ok(expiryEvent, 'closure expiry must fire');
+
+  const rejected = machine.getDiagnostics().rejectedEvents;
+  const event = rejected.find((e) => e.reason === 'closure_expired');
+  assert.ok(event, 'closure-expired rejection must be recorded');
+  assertCandidateEventDiagnostics(event, 'rejected_closure_expired');
+});
+
+// This rejection reason is currently dropped entirely — the entry-gate check
+// returns `rejected_unstable` without ever calling record(), so today there
+// is zero diagnostic trail (not even a bare timestamp) for this candidate.
+test('PAT-935 RED: closure entry-gate instability rejection is recorded with full scalar diagnostic context', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  const r = machine.process({ timestampMs: 700, ear: CLOSED_EAR, yawProxy: 0.1, motion: 0.005 });
+  assert.equal(r.decision, 'rejected_unstable');
+
+  const rejected = machine.getDiagnostics().rejectedEvents;
+  assert.equal(rejected.length, 1, 'unstable entry-gate rejection must be recorded, not silently dropped');
+  assertCandidateEventDiagnostics(rejected[0], 'rejected_unstable');
+});
+
+// Enrichment must not break the existing bounded-size guarantee on the
+// accepted/rejected diagnostic lists (MAX_EVENTS = 200).
+test('PAT-935: rejectedEvents/acceptedEvents remain bounded in size after enrichment', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  // Drive 250 refractory rejections (well above MAX_EVENTS=200): each cycle
+  // completes one accepted blink, then immediately attempts a second closure
+  // within the refractory window (close-to-close gap 120ms < REFRACTORY_MS=180ms).
+  for (let i = 0; i < 250; i++) {
+    const t = 700 + i * 1000;
+    frame(machine, t, CLOSED_EAR); // closure_started
+    frame(machine, t + 100, OPEN_EAR); // accepted_blink
+    frame(machine, t + 120, CLOSED_EAR); // rejected_refractory
+  }
+
+  const diag = machine.getDiagnostics();
+  assert.ok(diag.rejectedEvents.length <= 200, 'rejectedEvents must stay bounded at MAX_EVENTS');
+});
