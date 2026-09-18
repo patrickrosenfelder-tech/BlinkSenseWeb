@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="BlinkSense is a privacy-first, on-device blink-rate dashboard for desk-docked screen work — real-time BPM, alert zones, session history, and Docked Mode on macOS, Windows, Android and iOS." />
     <meta name="theme-color" content="#F2F2F7" />
+    <!-- Issue L: preload font before CSS, avoids blocking @import chain -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" />
     <title>BlinkSense — Real-time blink-rate awareness, on-device</title>
   </head>
   <body>
@@ -285,7 +289,7 @@
         <details><summary>Will it interrupt my work?<span aria-hidden="true">+</span></summary><p>Alerts are configurable per zone, category-aware, and support quiet hours — you decide when and how BlinkSense speaks up, and can pause it anytime.</p></details>
       </div></div></section>
 
-      <section class="cta"><div class="shell cta-inner reveal"><p class="eyebrow"><span></span> A calmer screen day starts here</p><h2>Make room for the<br /><em>little things.</em></h2><p>Join the first to hear when BlinkSense is ready for your desk.</p><button class="button button-light js-early-access" type="button">Request early access <span aria-hidden="true">→</span></button><small>No signup is active yet. This button won't collect or send any data.</small></div></section>
+      <section class="cta"><div class="shell cta-inner reveal"><p class="eyebrow"><span></span> A calmer screen day starts here</p><h2>Make room for the<br /><em>little things.</em></h2><p>Join the first to hear when BlinkSense is ready for your desk.</p><button class="button button-light js-early-access" type="button" aria-describedby="early-access-note">Request early access <span aria-hidden="true">→</span></button><small id="early-access-note">No signup is active yet. This button won't collect or send any data.</small></div></section>
     </main>
 
     <footer class="site-footer"><div class="shell footer-grid"><a class="brand" href="#top" aria-label="BlinkSense home"><svg aria-hidden="true" viewBox="0 0 34 34" fill="none"><path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/><circle cx="17" cy="17" r="3.2" fill="currentColor"/></svg><span>Blink<span>Sense</span></span></a><p>Real-time, on-device blink-rate awareness for focused screen work.</p><div class="footer-links"><a href="#privacy">Privacy</a><a href="#faq">FAQ</a><button class="footer-button js-early-access" type="button">Early access</button></div><small>© <span id="year"></span> BlinkSense. Awareness, not medical advice.</small></div></footer>
