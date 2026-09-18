@@ -457,3 +457,114 @@ describe('6. Android dead-zone stuck-closed regression (RED)', () => {
       `must recover within 300ms, not wait for expiry`);
   });
 });
+
+// ─── 7. SHALLOW THRESHOLD OSCILLATION (CODEX RED) ───────────────────────────
+
+describe('7. Shallow threshold oscillation around close threshold (Codex RED)', () => {
+  test('after warmup baseline=0.30, shallow closure/recovery oscillation (EAR 0.215 then 0.217 at 100ms intervals) must count 0 blinks', () => {
+    const OPEN = 0.30;
+    const machine = new BlinkStateMachine();
+    const t0 = warmup(machine, OPEN);
+
+    // Baseline = 0.30 -> closeThreshold = 0.72 * 0.30 = 0.216.
+    // Shallow oscillation around close threshold: dips to 0.215 then recovers to 0.217 at 100ms intervals.
+    for (let i = 0; i < 4; i++) {
+      const t = t0 + 100 + i * 200;
+      frame(machine, t, 0.215);
+      frame(machine, t + 100, 0.217);
+    }
+
+    assert.equal(machine.blinkCount, 0,
+      'Shallow oscillation around close threshold (0.215 then 0.217) must count 0 blinks');
+  });
+});
+
+// ─── 8. DEPTH GATE CLOSURE ENTRY BASELINE BOUNDARIES (CODEX P2) ─────────────
+// When depth was compared against this.openBaseline, baseline adapted on the reopen
+// frame before depth was checked, shifting the verdict with reopen timing:
+//   - baseline 0.30, trough 0.194: reopen 0.246 pulled baseline down to 0.2973 (depth cutoff 0.1932),
+//     erroneously rejecting genuine blinks (0 blinks), while reopen 0.30 accepted (1 blink).
+//   - baseline 0.30, trough 0.196: reopen 0.34 pulled baseline up to 0.302 (depth cutoff 0.1963),
+//     erroneously accepting shallow flutter (1 blink), while reopen 0.30 rejected (0 blinks).
+// Snapshotting closureEntryBaseline at closure start ensures depth is evaluated against
+// the baseline when closure began (0.30 -> depth cutoff 0.65 * 0.30 = 0.195), invariant to reopen.
+
+describe('8. Depth gate closureEntryBaseline boundary tests (Codex P2)', () => {
+  test('proving: with baseline 0.30, unpatched comparison against adapted openBaseline makes trough 0.194 reopens to 0.246 reject (0 blinks) but reopens to 0.30 accept (1 blink); trough 0.196 reopens to 0.30 reject, reopens to 0.34 accept', () => {
+    const OPEN = 0.30;
+
+    // 1. Trough 0.194, unpatched (no closureEntryBaseline snapshot):
+    // Reopen to 0.246 adapts baseline to 0.2973 -> depth cutoff 0.1932 -> 0.194 is rejected (0 blinks).
+    const m1 = new BlinkStateMachine();
+    const t0 = warmup(m1, OPEN);
+    frame(m1, t0 + 100, 0.194);
+    m1.closureEntryBaseline = null; // simulate unpatched behavior where depth compared against openBaseline
+    frame(m1, t0 + 200, 0.246);
+    assert.equal(m1.blinkCount, 0, 'Unpatched: trough 0.194 reopens to 0.246 must reject (0 blinks)');
+
+    // Reopen to 0.30 keeps baseline at 0.30 -> depth cutoff 0.195 -> 0.194 is accepted (1 blink).
+    const m2 = new BlinkStateMachine();
+    const t1 = warmup(m2, OPEN);
+    frame(m2, t1 + 100, 0.194);
+    m2.closureEntryBaseline = null;
+    frame(m2, t1 + 200, 0.30);
+    assert.equal(m2.blinkCount, 1, 'Unpatched: trough 0.194 reopens to 0.30 must accept (1 blink)');
+
+    // 2. Trough 0.196, unpatched:
+    // Reopen to 0.30 keeps baseline at 0.30 -> depth cutoff 0.195 -> 0.196 is rejected (0 blinks).
+    const m3 = new BlinkStateMachine();
+    const t2 = warmup(m3, OPEN);
+    frame(m3, t2 + 100, 0.196);
+    m3.closureEntryBaseline = null;
+    frame(m3, t2 + 200, 0.30);
+    assert.equal(m3.blinkCount, 0, 'Unpatched: trough 0.196 reopens to 0.30 must reject (0 blinks)');
+
+    // Reopen to 0.34 adapts baseline to 0.302 -> depth cutoff 0.1963 -> 0.196 is accepted (1 blink).
+    const m4 = new BlinkStateMachine();
+    const t3 = warmup(m4, OPEN);
+    frame(m4, t3 + 100, 0.196);
+    m4.closureEntryBaseline = null;
+    frame(m4, t3 + 200, 0.34);
+    assert.equal(m4.blinkCount, 1, 'Unpatched: trough 0.196 reopens to 0.34 must accept (1 blink)');
+  });
+
+  test('with baseline 0.30 and closureEntryBaseline snapshot, trough 0.194 is accepted (1 blink) for both 0.246 and 0.30 reopen', () => {
+    const OPEN = 0.30;
+
+    // Trough 0.194 <= 0.195 depth threshold:
+    // Reopen to 0.246 must now accept 1 blink (immune to reopen adaptation)
+    const m1 = new BlinkStateMachine();
+    const t0 = warmup(m1, OPEN);
+    frame(m1, t0 + 100, 0.194);
+    frame(m1, t0 + 200, 0.246);
+    assert.equal(m1.blinkCount, 1, 'Fixed: trough 0.194 reopens to 0.246 must accept (1 blink)');
+
+    // Reopen to 0.30 accepts 1 blink
+    const m2 = new BlinkStateMachine();
+    const t1 = warmup(m2, OPEN);
+    frame(m2, t1 + 100, 0.194);
+    frame(m2, t1 + 200, 0.30);
+    assert.equal(m2.blinkCount, 1, 'Fixed: trough 0.194 reopens to 0.30 must accept (1 blink)');
+  });
+
+  test('with baseline 0.30 and closureEntryBaseline snapshot, trough 0.196 is rejected (0 blinks) for both 0.30 and 0.34 reopen', () => {
+    const OPEN = 0.30;
+
+    // Trough 0.196 > 0.195 depth threshold:
+    // Reopen to 0.30 rejects (0 blinks)
+    const m1 = new BlinkStateMachine();
+    const t0 = warmup(m1, OPEN);
+    frame(m1, t0 + 100, 0.196);
+    frame(m1, t0 + 200, 0.30);
+    assert.equal(m1.blinkCount, 0, 'Fixed: trough 0.196 reopens to 0.30 must reject (0 blinks)');
+
+    // Reopen to 0.34 must now reject 0 blinks (immune to reopen adaptation pulling baseline up)
+    const m2 = new BlinkStateMachine();
+    const t1 = warmup(m2, OPEN);
+    frame(m2, t1 + 100, 0.196);
+    frame(m2, t1 + 200, 0.34);
+    assert.equal(m2.blinkCount, 0, 'Fixed: trough 0.196 reopens to 0.34 must reject (0 blinks)');
+  });
+});
+
+

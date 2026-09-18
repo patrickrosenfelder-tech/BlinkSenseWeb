@@ -22,6 +22,9 @@ const CLOSURE_ENTRY_YAW_THRESHOLD = 0.20;     // strict > : yaw=0.20 is allowed,
 // frames >= 80% of initial baseline so squinting-while-stable cannot erode thresholds.
 const MIN_REOPEN_RATIO = 0.72;   // belt-and-suspenders floor on the acceptance path (aligned with CLOSE_RATIO)
 const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
+// A genuine closure must achieve sufficient depth (min EAR <= 65% of open baseline),
+// rejecting shallow threshold oscillations/flutter (e.g. EAR 0.215/0.217 at baseline 0.30).
+const MAX_CLOSURE_DEPTH_RATIO = 0.65;
 
 export class BlinkStateMachine {
   constructor({ defaultOpenEar = DEFAULT_OPEN_EAR } = {}) {
@@ -30,6 +33,8 @@ export class BlinkStateMachine {
     this.initialBaseline = 0.0;  // PAT-925: set once at warmup; never reset; used as reopen floor
     this.state = 'open';
     this.closedAt = null;
+    this.minClosedEar = Infinity; // Track closure trough depth
+    this.closureEntryBaseline = null; // Baseline captured at closure entry
     this.lastClosureStartedAt = -Infinity; // PAT-925 Fix 1: refractory compares close-to-close
     this.lastAcceptedAt = -Infinity;       // kept for diagnostics/observability
     this.blinkCount = 0;
@@ -45,6 +50,8 @@ export class BlinkStateMachine {
     this.openBaseline = 0.0;
     this.state = 'open';
     this.closedAt = null;
+    this.minClosedEar = Infinity;
+    this.closureEntryBaseline = null;
     this.warmupUntil = null;
     this.stabilityFrames = [];
     this.lastProcessedTimestampMs = null;
@@ -170,6 +177,8 @@ export class BlinkStateMachine {
       this.record(this.rejectedEvents, event);
       this.state = 'open';
       this.closedAt = null;
+      this.minClosedEar = Infinity;
+      this.closureEntryBaseline = null;
       return { blinked: false, decision: 'rejected_closure_expired' };
     }
 
@@ -207,17 +216,34 @@ export class BlinkStateMachine {
       this.state = 'closed';
       this.closedAt = timestampMs;
       this.lastClosureStartedAt = timestampMs; // PAT-925: anchor for next refractory check
+      this.minClosedEar = ear;
+      this.closureEntryBaseline = this.openBaseline;
       return { blinked: false, decision: 'closure_started' };
+    }
+
+    if (this.state === 'closed') {
+      if (ear < this.minClosedEar) this.minClosedEar = ear;
     }
 
     if (this.state === 'closed' && ear > currentCloseThreshold) {
       const durationMs = timestampMs - this.closedAt;
+      const minClosedEar = this.minClosedEar;
+      const closureEntryBaseline = this.closureEntryBaseline ?? this.openBaseline;
       this.state = 'open';
       this.closedAt = null;
+      this.minClosedEar = Infinity;
+      this.closureEntryBaseline = null;
       if (durationMs < MIN_CLOSURE_MS) {
         const event = this.buildDiagnosticEvent('closure_too_short', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_short_closure' };
+      }
+      // Closure depth gate: rejects shallow threshold oscillations/flutter that never reached true closure depth.
+      // Evaluated against closureEntryBaseline captured at closure start, so reopen adaptation cannot shift the verdict.
+      if (minClosedEar > MAX_CLOSURE_DEPTH_RATIO * closureEntryBaseline) {
+        const event = this.buildDiagnosticEvent('shallow_closure', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, minClosedEar, closureEntryBaseline } });
+        this.record(this.rejectedEvents, event);
+        return { blinked: false, decision: 'rejected_shallow_closure' };
       }
       // PAT-925 Fix 3: belt-and-suspenders reopen floor. Requires EAR at reopen to be
       // at least MIN_REOPEN_RATIO of the session's warmup baseline. Partial squeezes where
