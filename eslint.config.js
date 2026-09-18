@@ -2,7 +2,7 @@ import js from '@eslint/js';
 
 export default [
   {
-    ignores: ['dist/**']
+    ignores: ['dist/**', 'app/dist/**', 'app/src/**', 'app/test/**']
   },
   js.configs.recommended,
   {
@@ -12,7 +12,11 @@ export default [
         document: 'readonly',
         window: 'readonly',
         IntersectionObserver: 'readonly',
-        setTimeout: 'readonly'
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        requestAnimationFrame: 'readonly'
       }
     },
     rules: {

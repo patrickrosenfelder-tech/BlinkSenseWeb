@@ -311,7 +311,11 @@ export class BlinkDetector {
       lastLandmarkTimestampMs: this.lastLandmarkTimestampMs,
       // PAT-925 Fix 4: face-not-found span scalars — distinct from rAF stalls and exceptions.
       faceNotFoundFrames: this.faceNotFoundFrames,
-      longestFaceDropMs: this.longestFaceDropMs,
+      // Include in-progress span: if face is still missing, the current elapsed drop
+      // time may already exceed the longest completed span.
+      longestFaceDropMs: this.faceDropStartMs !== null && this.lastTimestampMs !== undefined
+        ? Math.max(this.longestFaceDropMs, (this.lastTimestampMs ?? 0) - this.faceDropStartMs)
+        : this.longestFaceDropMs,
       timeline: [...this.timeline],
       ...this.machine.getDiagnostics(),
     };

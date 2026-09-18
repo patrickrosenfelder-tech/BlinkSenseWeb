@@ -18,9 +18,9 @@ const STABILITY_WINDOW_MS = 150; // Window for measuring stability
 // head movement still allows blinks; only fast shaking (>0.001 velocity) blocks new closures.
 const CLOSURE_ENTRY_MOTION_THRESHOLD = 0.001; // strict > : motion=0.001 is allowed, 0.005 is not
 const CLOSURE_ENTRY_YAW_THRESHOLD = 0.20;     // strict > : yaw=0.20 is allowed, 0.25 is not
-// PAT-925 Fix 3: Reopen must reach >= 75% of warmup baseline; EWMA adapts only from
+// PAT-925 Fix 3: Reopen must reach >= 72% of warmup baseline; EWMA adapts only from
 // frames >= 80% of initial baseline so squinting-while-stable cannot erode thresholds.
-const MIN_REOPEN_RATIO = 0.75;   // belt-and-suspenders floor on the acceptance path
+const MIN_REOPEN_RATIO = 0.72;   // belt-and-suspenders floor on the acceptance path (aligned with CLOSE_RATIO)
 const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
 
 export class BlinkStateMachine {
@@ -210,7 +210,7 @@ export class BlinkStateMachine {
       return { blinked: false, decision: 'closure_started' };
     }
 
-    if (this.state === 'closed' && isOpen) {
+    if (this.state === 'closed' && ear > currentCloseThreshold) {
       const durationMs = timestampMs - this.closedAt;
       this.state = 'open';
       this.closedAt = null;
