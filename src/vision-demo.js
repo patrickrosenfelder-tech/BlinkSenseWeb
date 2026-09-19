@@ -111,7 +111,7 @@ function ringGapStage(root) {
       feedback.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
       feedback.textContent = ok ? `Correct! (${score}/${round} so far)` : `Not quite — that gap pointed ${gap}°.`;
       const next = document.createElement('button');
-      next.className = 'button';
+      next.className = 'btn btn-primary btn-sm';
       next.textContent = round >= maxRounds ? 'See result' : 'Next round';
       next.addEventListener('click', () => {
         if (round >= maxRounds) {
@@ -165,7 +165,7 @@ function contrastStage(root) {
         fb.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
         fb.textContent = ok ? 'Correct' : `Not quite — square ${which === 0 ? 'A (left)' : 'B (right)'} was darker.`;
         const nx = document.createElement('button');
-        nx.className = 'button';
+        nx.className = 'btn btn-primary btn-sm';
         nx.textContent = round >= maxRounds ? 'See result' : 'Next round';
         nx.addEventListener('click', () => {
           if (round >= maxRounds) {
@@ -213,7 +213,7 @@ function amslerStage(root) {
   ];
   gridButtons.forEach(([label, verdict]) => {
     const b = document.createElement('button');
-    b.className = 'button button-outline';
+    b.className = 'btn btn-ghost btn-sm';
     b.textContent = label;
     b.addEventListener('click', () => {
       const ok = label === 'Lines look straight';
@@ -274,7 +274,7 @@ function tumblingEStage(root) {
     row.className = 'vcd-swatch-row';
     [['Up', 'up'], ['Right', 'right'], ['Down', 'down'], ['Left', 'left']].forEach(([lab, key]) => {
       const b = document.createElement('button');
-      b.className = 'button button-outline';
+      b.className = 'btn btn-ghost btn-sm';
       b.textContent = lab;
       b.addEventListener('click', () => {
         if (fb.dataset.done) return;
@@ -284,7 +284,7 @@ function tumblingEStage(root) {
         fb.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
         fb.textContent = ok ? 'Correct' : `Not quite — it faced ${dir}.`;
         const nx = document.createElement('button');
-        nx.className = 'button';
+        nx.className = 'btn btn-primary btn-sm';
         nx.textContent = round >= maxRounds ? 'See result' : 'Next round';
         nx.addEventListener('click', () => {
           if (round >= maxRounds) {
@@ -320,7 +320,7 @@ function showResult(host, verdict, status, detail, restart, warnColor) {
   const d = document.createElement('p');
   d.textContent = detail;
   const r = document.createElement('button');
-  r.className = 'button';
+  r.className = 'btn btn-primary';
   r.textContent = 'Try again';
   r.addEventListener('click', restart);
   box.append(v, s, d, r);
@@ -334,7 +334,7 @@ export function bootVisionDemo(root) {
   nav.className = 'vcd-nav';
   Object.entries(VCD_TESTS).forEach(([key, meta]) => {
     const b = document.createElement('button');
-    b.className = 'button button-outline';
+    b.className = 'btn btn-ghost btn-sm';
     b.dataset.k = key;
     b.textContent = meta.label;
     b.addEventListener('click', () => {
