@@ -238,14 +238,14 @@ function tumblingEStage(root) {
   const head = document.createElement('p');
   head.className = 'vcd-hint';
   let round = 1, score = 0;
-  const maxRounds = 5;
+  const maxRounds = 10;
   const dirs = ['up', 'right', 'down', 'left'];
   const fb = document.createElement('p');
   fb.className = 'vcd-feedback';
 
   function stage() {
     const dir = pick(dirs);
-    const size = Math.max(48, 152 - (round - 1) * 24);
+    const size = Math.max(12, 100 - round * 8);
     head.textContent = `Round ${round} of ${maxRounds} — which way is the E facing?`;
     wrap.innerHTML = '';
     const c = makeCanvas(220, 220);
@@ -265,7 +265,7 @@ function tumblingEStage(root) {
     };
     g.save();
     g.translate(cx, cy);
-    g.rotate({ up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[dir]);
+    g.rotate({ up: -Math.PI / 2, right: 0, down: Math.PI / 2, left: Math.PI }[dir]);
     g.translate(-cx, -cy);
     drawE();
     g.restore();
@@ -288,8 +288,8 @@ function tumblingEStage(root) {
         nx.textContent = round >= maxRounds ? 'See result' : 'Next round';
         nx.addEventListener('click', () => {
           if (round >= maxRounds) {
-            showResult(wrap, `Score ${score}/${maxRounds}`, score >= 4 ? 'PASS' : 'SCORE',
-              'Orientation acuity: correctly reading the direction of a shrinking letter E.',
+            showResult(wrap, `Score ${score}/${maxRounds}`, score >= 7 ? 'PASS' : 'SCORE',
+              `You identified the E orientation in ${score} of 10 rounds; later rounds shrink the E below reading limits.`,
               () => tumblingEStage(root));
           } else { round++; fb.dataset.done = ''; stage(); }
         });
