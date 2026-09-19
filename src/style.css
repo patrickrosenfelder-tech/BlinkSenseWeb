@@ -476,11 +476,8 @@ h1, h2, h3 { margin: 0; }
   border-color: var(--accent);
 }
 
-/* Floating badge */
-.floating-badge {
-  position: absolute;
-  left: -22px;
-  bottom: 30px;
+/* Docked Mode status sits below the mock so it never obscures the live view. */
+.docked-mode-note {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -489,6 +486,7 @@ h1, h2, h3 { margin: 0; }
   border-radius: 14px;
   box-shadow: var(--shadow-md);
   padding: 12px 16px;
+  margin: 14px 0 0;
 }
 .badge-icon {
   font-size: 20px;
@@ -496,7 +494,8 @@ h1, h2, h3 { margin: 0; }
   line-height: 1;
 }
 .badge-label { font-size: 10px; color: var(--text-tertiary); font-family: var(--mono); text-transform: uppercase; letter-spacing: .5px; }
-.badge-value { font-size: 13px; font-weight: 600; color: var(--text); }
+.badge-value { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+.badge-description { display: block; color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-top: 3px; }
 
 .mock-caption {
   color: var(--text-tertiary);
@@ -537,6 +536,8 @@ h1, h2, h3 { margin: 0; }
   padding: 28px;
   box-shadow: var(--shadow-sm);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .step-num {
   font: 600 11px/1 var(--mono);
@@ -599,13 +600,14 @@ h1, h2, h3 { margin: 0; }
 .icon-chart i:nth-child(2) { height: 24px; }
 .icon-chart i:nth-child(3) { height: 34px; }
 
-.step-card h3 {
+.step-content { margin-top: auto; }
+.step-content h3 {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -.4px;
   margin-bottom: 10px;
 }
-.step-card p {
+.step-content p {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.65;
@@ -1083,8 +1085,7 @@ details p {
     padding: 16px 0 0;
   }
 
-  .floating-badge { left: 4px; bottom: -16px; }
-  .mock-caption   { margin-top: 28px; }
+  .docked-mode-note { margin-top: 12px; }
 
   .footer-grid { grid-template-columns: 1fr; gap: 16px; }
   .footer-links { flex-wrap: wrap; gap: 14px; }

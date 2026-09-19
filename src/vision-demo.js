@@ -58,14 +58,15 @@ function ringGapStage(root) {
 
   function setupRound() {
     gap = pick([0, 45, 90, 135, 180, 225, 270, 315]);
-    const size = Math.max(48, 150 - (round - 1) * 20);
+    // Keep the outer stroke inside the canvas at every angle, including 0° and 180°.
+    const size = Math.max(48, 138 - (round - 1) * 18);
     const stroke = Math.max(3, 14 - (round - 1) * 1.9);
     const inkA = Math.max(0.18, 1 - (round - 1) * 0.15);
     head.textContent = `Round ${round} of ${maxRounds} — the small ring has a gap. Tap the matching spot on the large ring.`;
     wrap.innerHTML = '';
-    const top = makeCanvas(220, 130);
+    const top = makeCanvas(220, 180);
     const tg = ctx2d(top);
-    const tcx = 110, tcy = 65;
+    const tcx = 110, tcy = 90;
     const ink = `rgba(20,20,20,${inkA})`;
     drawLandolt(tg, tcx, tcy, size / 2, stroke, gap, ink);
     // faint guide dot at center
@@ -244,24 +245,23 @@ function tumblingEStage(root) {
 
   function stage() {
     const dir = pick(dirs);
-    const size = Math.max(44, 180 - (round - 1) * 26);
+    const size = Math.max(48, 152 - (round - 1) * 24);
     head.textContent = `Round ${round} of ${maxRounds} — which way is the E facing?`;
     wrap.innerHTML = '';
     const c = makeCanvas(220, 220);
     const g = ctx2d(c);
     const cx = 110, cy = 110;
-    g.lineWidth = Math.max(4, size / 8);
-    g.strokeStyle = '#000';
+    g.fillStyle = '#111827';
     const drawE = () => {
       const s = size;
-      // classic 4x4-ish E strokes (top, middle, bottom bars + left stem)
-      const u = s / 4;
-      g.beginPath();
-      g.moveTo(cx - s / 2, cy - s / 2); g.lineTo(cx + s / 2, cy - s / 2);
-      g.moveTo(cx - s / 2, cy - s / 2); g.lineTo(cx - s / 2, cy + s / 2);
-      g.moveTo(cx - s / 2, cy - u / 2); g.lineTo(cx + s / 2, cy - u / 2);
-      g.moveTo(cx - s / 2, cy + s / 2); g.lineTo(cx + s / 2, cy + s / 2);
-      g.stroke();
+      const bar = Math.round(s / 5);
+      const x = Math.round(cx - s / 2);
+      const y = Math.round(cy - s / 2);
+      // A filled, optotype-style E keeps all strokes crisp and equally weighted.
+      g.fillRect(x, y, bar, s);
+      g.fillRect(x, y, s, bar);
+      g.fillRect(x, Math.round(cy - bar / 2), Math.round(s * .76), bar);
+      g.fillRect(x, y + s - bar, s, bar);
     };
     g.save();
     g.translate(cx, cy);

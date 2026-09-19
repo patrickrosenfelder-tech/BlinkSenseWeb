@@ -111,11 +111,12 @@
             </div>
           </div>
 
-          <div class="floating-badge" aria-hidden="true">
+          <div class="docked-mode-note" aria-label="Docked Mode status">
             <span class="badge-icon">◐</span>
             <div>
               <span class="badge-label">Docked Mode</span>
               <span class="badge-value">Keep-awake active</span>
+              <span class="badge-description">Keeps the display awake while tracking, without covering the live session view.</span>
             </div>
           </div>
 
@@ -147,24 +148,30 @@
           <li class="step-card reveal">
             <p class="step-num">01</p>
             <div class="step-icon-wrap icon-eye" aria-hidden="true"></div>
-            <h3>Capture &amp; landmarks</h3>
-            <p>The front camera feeds a local vision pipeline — Apple Vision, ML Kit, or ARKit TrueDepth blend shapes — that finds your eyes every frame.</p>
+            <div class="step-content">
+              <h3>Capture &amp; landmarks</h3>
+              <p>The front camera feeds a local vision pipeline — Apple Vision, ML Kit, or ARKit TrueDepth blend shapes — that finds your eyes every frame.</p>
+            </div>
           </li>
           <li class="step-card reveal">
             <p class="step-num">02</p>
             <div class="step-icon-wrap icon-ear" aria-hidden="true">
               <i></i><i></i><i></i>
             </div>
-            <h3>EAR &amp; calibration</h3>
-            <p>Left and right Eye Aspect Ratio is computed against its own baseline, calibrated only from plausibly open-eye frames so a closed-eye startup can't poison it.</p>
+            <div class="step-content">
+              <h3>EAR &amp; calibration</h3>
+              <p>Left and right Eye Aspect Ratio is computed against its own baseline, calibrated only from plausibly open-eye frames so a closed-eye startup can't poison it.</p>
+            </div>
           </li>
           <li class="step-card reveal">
             <p class="step-num">03</p>
             <div class="step-icon-wrap icon-chart" aria-hidden="true">
               <i></i><i></i><i></i>
             </div>
-            <h3>BPM &amp; alert zones</h3>
-            <p>A debounced blink-state machine produces a rolling BPM, compared against healthy / low / critical zones with quiet hours and category-aware thresholds.</p>
+            <div class="step-content">
+              <h3>BPM &amp; alert zones</h3>
+              <p>A debounced blink-state machine produces a rolling BPM, compared against healthy / low / critical zones with quiet hours and category-aware thresholds.</p>
+            </div>
           </li>
         </ol>
       </div>
