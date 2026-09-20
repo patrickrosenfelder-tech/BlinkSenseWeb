@@ -65,7 +65,7 @@
             </button>
             <a class="text-link" href="#dashboard">See the dashboard <span aria-hidden="true">↓</span></a>
           </div>
-          <p class="fine-print" id="early-access-note">BlinkSense is an awareness tool, not a medical device. It does not diagnose, treat, cure, or prevent any condition.</p>
+          <p class="fine-print" id="early-access-note">No spam, ever. Unsubscribe any time. BlinkSense is an awareness tool, not a medical device.</p>
         </div>
 
         <div class="hero-visual reveal">
@@ -411,7 +411,7 @@
         <button class="btn btn-white js-early-access" type="button" aria-describedby="cta-note">
           Request early access <span aria-hidden="true">→</span>
         </button>
-        <p class="cta-note" id="cta-note">No signup is active yet. This button won't collect or send any data.</p>
+        <p class="cta-note" id="cta-note">Join the waitlist — we'll email you when early access opens. No spam, unsubscribe any time.</p>
       </div>
     </section>
 
@@ -437,12 +437,57 @@
     </div>
   </footer>
 
-  <!-- Toast -->
-  <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden>
-    <button class="toast-close" type="button" aria-label="Close">×</button>
-    <strong>Early access is not open yet.</strong>
-    <span>We haven't enabled collection, so no information was requested or sent.</span>
-  </div>
+  <!-- Early-access modal -->
+  <div class="ea-backdrop" id="ea-backdrop" hidden aria-hidden="true"></div>
+  <dialog class="ea-modal" id="ea-modal" aria-labelledby="ea-modal-title" aria-describedby="ea-modal-desc">
+    <button class="ea-close" type="button" aria-label="Close early access form">×</button>
+
+    <div class="ea-modal-header">
+      <svg class="ea-modal-icon" aria-hidden="true" viewBox="0 0 34 34" fill="none">
+        <path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/>
+        <circle cx="17" cy="17" r="3.4" fill="currentColor"/>
+      </svg>
+      <p class="eyebrow" style="margin:0">Early access</p>
+    </div>
+
+    <h2 class="ea-modal-title" id="ea-modal-title">Be the first to know<br />when BlinkSense ships.</h2>
+    <p class="ea-modal-desc" id="ea-modal-desc">We're building for privacy-first screen workers. Drop your email and we'll reach out the moment early access opens — no spam, unsubscribe any time.</p>
+
+    <!-- Idle state: form -->
+    <form class="ea-form" id="ea-form" novalidate>
+      <label class="ea-label" for="ea-email">Email address</label>
+      <div class="ea-input-row">
+        <input
+          class="ea-input"
+          id="ea-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          required
+          aria-required="true"
+          aria-describedby="ea-email-error"
+        />
+        <button class="btn btn-primary ea-submit" type="submit">
+          <span class="ea-submit-label">Join waitlist</span>
+          <span class="ea-submit-spinner" aria-hidden="true" hidden></span>
+        </button>
+      </div>
+      <p class="ea-error" id="ea-email-error" role="alert" aria-live="assertive" hidden></p>
+      <p class="ea-fine-print">Privacy-first: your email is used only for BlinkSense updates. No spam.</p>
+    </form>
+
+    <!-- Success state -->
+    <div class="ea-success" id="ea-success" hidden>
+      <span class="ea-success-icon" aria-hidden="true">✓</span>
+      <h3>You're on the list!</h3>
+      <p>We'll email you as soon as early access opens. Keep an eye on your inbox (check spam if needed).</p>
+      <button class="btn btn-ghost btn-sm ea-success-close" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Toast (kept for non-JS fallback messaging) -->
+  <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
   <script type="module" src="/src/main.js"></script>
   <script type="module">
