@@ -334,32 +334,883 @@ function tumblingEStage(root) {
 }
 
 
-function dominantEyeStage(root) { simpleTest(root, 'Dominant Eye', 'Form a triangle with your hands around this circle, then alternate closing eyes. Which eye keeps the circle centered?', ['Left Eye', 'Right Eye', 'Neither'], 'Right Eye', 'Most people are right-eye dominant. This test helps find yours.', dominantEyeStage); }
-function colorDiscriminationStage(root) { simpleTest(root, 'Color Discrimination', 'Which color is slightly different?', ['Red', 'Slightly different Red', 'Red'], 'Slightly different Red', 'Color discrimination degrades with some vision conditions.', colorDiscriminationStage); }
-function fadingTextStage(root) { simpleTest(root, 'Fading Text', 'Can you read this fading text: <span style="opacity:0.2">HELLO</span>', ['Yes', 'No'], 'Yes', 'Contrast sensitivity check.', fadingTextStage); }
-function gridVisibilityStage(root) { simpleTest(root, 'Grid Visibility', 'Do you see all intersections clearly?', ['Yes', 'No'], 'Yes', 'Central field check.', gridVisibilityStage); }
-function hueArrangementStage(root) { simpleTest(root, 'Hue Arrangement', 'Which color belongs between Red and Yellow?', ['Blue', 'Orange', 'Green'], 'Orange', 'Color sorting check.', hueArrangementStage); }
-function ishiharaStage(root) { simpleTest(root, 'Ishihara Plates', 'Imagine a dotted circle with a number 8 in red dots. What number do you see?', ['3', '8', 'Nothing'], '8', 'Color vision check.', ishiharaStage); }
-function colorSortingStage(root) { simpleTest(root, 'Color Sorting Game', 'Sort these from darkest to lightest: A(Black), B(Gray), C(White)', ['A,B,C', 'C,B,A', 'B,A,C'], 'A,B,C', 'Brightness sorting check.', colorSortingStage); }
-function colorMatchingStage(root) { simpleTest(root, 'Color Matching', 'Match the color: Pink', ['Light Red', 'Dark Red', 'Blue'], 'Light Red', 'Color matching check.', colorMatchingStage); }
-function snellenStage(root) { simpleTest(root, 'Mobile Snellen Chart', 'What is the top letter usually on a Snellen chart?', ['E', 'A', 'Z'], 'E', 'Acuity knowledge check.', snellenStage); }
-function letterIsolationStage(root) { simpleTest(root, 'Letter Isolation', 'What is the middle letter in: X Y Z', ['X', 'Y', 'Z'], 'Y', 'Crowding check.', letterIsolationStage); }
-function blurryTextStage(root) { simpleTest(root, 'Blurry Text Finder', 'Which word is clear: <span style="filter:blur(2px)">CAT</span> or <span>DOG</span>?', ['CAT', 'DOG'], 'DOG', 'Acuity check.', blurryTextStage); }
-function astigmatismWheelStage(root) { simpleTest(root, 'Astigmatism Wheel', 'Do some lines look darker than others?', ['Yes', 'No'], 'No', 'Astigmatism check.', astigmatismWheelStage); }
-function blurryClearStage(root) { simpleTest(root, 'Blurry vs Clear', 'Which is clearer: A or B?', ['A', 'B'], 'A', 'Clarity check.', blurryClearStage); }
-function nearFarStage(root) { simpleTest(root, 'Near Far Focus', 'Can you quickly switch focus from screen to 20ft away?', ['Yes', 'No'], 'Yes', 'Accommodation check.', nearFarStage); }
-function threeDDotStage(root) { simpleTest(root, '3D Dot Depth', 'Does the red dot appear closer than the blue one?', ['Yes', 'No'], 'Yes', 'Stereo vision check.', threeDDotStage); }
-function overlappingShapesStage(root) { simpleTest(root, 'Overlapping Shapes', 'If a square covers part of a circle, which is in front?', ['Square', 'Circle'], 'Square', 'Depth cue check.', overlappingShapesStage); }
-function shadowDepthStage(root) { simpleTest(root, 'Shadow Based Depth', 'If shadow is below an object, does it look floating?', ['Yes', 'No'], 'Yes', 'Shadow depth check.', shadowDepthStage); }
-function glareSensitivityStage(root) { simpleTest(root, 'Glare Sensitivity', 'Can you read past a bright glare spot?', ['Yes', 'No'], 'Yes', 'Glare check.', glareSensitivityStage); }
-function brightnessToleranceStage(root) { simpleTest(root, 'Brightness Tolerance', 'Is a very bright white screen uncomfortable?', ['Yes', 'No'], 'No', 'Light sensitivity check.', brightnessToleranceStage); }
-function peripheralVisionStage(root) { simpleTest(root, 'Peripheral Vision', 'While looking at center, can you see movement on edges?', ['Yes', 'No'], 'Yes', 'Peripheral check.', peripheralVisionStage); }
-function movingTargetStage(root) { simpleTest(root, 'Moving Target Tracking', 'Can you track a smoothly moving dot without jumping eyes?', ['Yes', 'No'], 'Yes', 'Pursuit tracking check.', movingTargetStage); }
-function rapidTapStage(root) { simpleTest(root, 'Rapid Tap Targets', 'Can you quickly tap appearing targets?', ['Yes', 'No'], 'Yes', 'Saccade and coordination check.', rapidTapStage); }
-function wordRecognitionStage(root) { simpleTest(root, 'Word Flankers', 'Can you read the middle word: xxAPPLExx', ['APPLE', 'PEAR'], 'APPLE', 'Flanker check.', wordRecognitionStage); }
-function dyslexiaScreeningStage(root) { simpleTest(root, 'Dyslexia Screening', 'Which is correct: b or d for dog?', ['b', 'd'], 'd', 'Symbol orientation check.', dyslexiaScreeningStage); }
-function eyeTrainingStage(root) { simpleTest(root, 'Focus Flexibility', 'Did you follow the pencil pushup exercise?', ['Yes', 'No'], 'Yes', 'Flexibility check.', eyeTrainingStage); }
-function colorSensitivityStage(root) { simpleTest(root, 'Color Sensitivity', 'Can you see subtle shifts in pastel colors?', ['Yes', 'No'], 'Yes', 'Subtle color check.', colorSensitivityStage); }
+function dominantEyeStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Form a triangle with your hands around this circle, then alternate closing eyes. Which eye keeps the circle centered?';
+  
+  const c = makeCanvas(220, 220);
+  const g = ctx2d(c);
+  g.fillStyle = '#000';
+  g.beginPath(); g.arc(110, 110, 30, 0, 7); g.fill();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Left Eye', 'Right Eye', 'Neither'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Right Eye' ? 'PASS' : 'SCORE', opt === 'Right Eye' ? 'PASS' : 'SCORE', 'Most people are right-eye dominant. This test helps find yours.', () => dominantEyeStage(root), opt !== 'Right Eye'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function colorDiscriminationStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Tap the odd color out of the group.';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  const oddIndex = rand(9);
+  const baseHue = rand(360);
+  
+  for(let i=0; i<9; i++) {
+    const x = (i % 3) * 80 + 10;
+    const y = Math.floor(i / 3) * 80 + 10;
+    const hue = i === oddIndex ? baseHue + 15 : baseHue;
+    g.fillStyle = `hsl(${hue}, 70%, 50%)`;
+    g.fillRect(x, y, 60, 60);
+  }
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  c.addEventListener('click', (e) => {
+    const rect = c.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 240;
+    const y = (e.clientY - rect.top) / rect.height * 240;
+    const col = Math.floor(x / 80);
+    const row = Math.floor(y / 80);
+    if(col >= 3 || row >= 3) return;
+    const clickedIdx = row * 3 + col;
+    const ok = clickedIdx === oddIndex;
+    showResult(wrap, ok ? 'PASS' : 'SCORE', ok ? 'PASS' : 'SCORE', 'Color discrimination check.', () => colorDiscriminationStage(root), !ok);
+  });
+  root.appendChild(wrap);
+}
+function fadingTextStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Read the text as it gets lighter. Can you read the last line?';
+  
+  const c = makeCanvas(280, 200);
+  const g = ctx2d(c);
+  g.font = '20px sans-serif';
+  g.textAlign = 'center';
+  for(let i=0; i<5; i++) {
+    const opacity = 1 - (i * 0.22);
+    g.fillStyle = `rgba(0,0,0,${opacity})`;
+    g.fillText('FADING TEXT', 140, 40 + i * 35);
+  }
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Contrast sensitivity check.', () => fadingTextStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function gridVisibilityStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Do you see all intersections clearly?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.fillStyle = '#000';
+  g.fillRect(0,0,240,240);
+  g.strokeStyle = '#fff';
+  g.lineWidth = 4;
+  for(let i=0; i<=6; i++) {
+    g.beginPath(); g.moveTo(i*40, 0); g.lineTo(i*40, 240); g.stroke();
+    g.beginPath(); g.moveTo(0, i*40); g.lineTo(240, i*40); g.stroke();
+  }
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Central field check.', () => gridVisibilityStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function hueArrangementStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Which color belongs between Red and Yellow?';
+  
+  const c = makeCanvas(280, 100);
+  const g = ctx2d(c);
+  g.fillStyle = 'red'; g.fillRect(20, 20, 60, 60);
+  g.fillStyle = '#eee'; g.fillRect(110, 20, 60, 60);
+  g.fillStyle = 'yellow'; g.fillRect(200, 20, 60, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Blue', 'Orange', 'Green'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Orange' ? 'PASS' : 'SCORE', opt === 'Orange' ? 'PASS' : 'SCORE', 'Color sorting check.', () => hueArrangementStage(root), opt !== 'Orange'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function ishiharaStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'What number do you see in the dots?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.fillStyle = '#fff'; g.fillRect(0,0,240,240);
+  
+  // draw random dots
+  for(let i=0; i<400; i++) {
+    const x = rand(240);
+    const y = rand(240);
+    const dist = Math.hypot(x-120, y-120);
+    if(dist < 110) {
+      // 8 shape approximate
+      const is8 = (Math.abs(x-120) < 30 && (Math.abs(y-80) < 30 || Math.abs(y-160) < 30)) || 
+                  (Math.abs(x-90) < 15 && Math.abs(y-120) < 50) || 
+                  (Math.abs(x-150) < 15 && Math.abs(y-120) < 50);
+      g.fillStyle = is8 ? `rgb(${150+rand(100)}, ${rand(50)}, ${rand(50)})` : `rgb(${rand(50)}, ${150+rand(100)}, ${rand(50)})`;
+      g.beginPath(); g.arc(x, y, 3+rand(4), 0, 7); g.fill();
+    }
+  }
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['3', '8', 'Nothing'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === '8' ? 'PASS' : 'SCORE', opt === '8' ? 'PASS' : 'SCORE', 'Color vision check.', () => ishiharaStage(root), opt !== '8'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function colorSortingStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Sort these from darkest to lightest: A(Black), B(Gray), C(White)';
+  
+  const c = makeCanvas(280, 100);
+  const g = ctx2d(c);
+  g.fillStyle = 'black'; g.fillRect(20, 20, 60, 60);
+  g.fillStyle = '#fff'; g.fillText('A', 45, 55);
+  g.fillStyle = 'gray'; g.fillRect(110, 20, 60, 60);
+  g.fillStyle = '#000'; g.fillText('B', 135, 55);
+  g.fillStyle = 'white'; g.fillRect(200, 20, 60, 60);
+  g.strokeRect(200, 20, 60, 60);
+  g.fillStyle = '#000'; g.fillText('C', 225, 55);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['A,B,C', 'C,B,A', 'B,A,C'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'A,B,C' ? 'PASS' : 'SCORE', opt === 'A,B,C' ? 'PASS' : 'SCORE', 'Brightness sorting check.', () => colorSortingStage(root), opt !== 'A,B,C'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function colorMatchingStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Match the color: Pink';
+  
+  const c = makeCanvas(280, 100);
+  const g = ctx2d(c);
+  g.fillStyle = 'pink'; g.fillRect(110, 20, 60, 60);
+  g.strokeRect(110, 20, 60, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Light Red', 'Dark Red', 'Blue'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Light Red' ? 'PASS' : 'SCORE', opt === 'Light Red' ? 'PASS' : 'SCORE', 'Color matching check.', () => colorMatchingStage(root), opt !== 'Light Red'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function snellenStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'What is the top letter usually on a Snellen chart?';
+  
+  const c = makeCanvas(200, 240);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.fillStyle = '#000';
+  g.font = 'bold 80px sans-serif';
+  g.fillText('E', 100, 80);
+  g.font = 'bold 40px sans-serif';
+  g.fillText('F P', 100, 140);
+  g.font = 'bold 20px sans-serif';
+  g.fillText('T O Z', 100, 180);
+  g.font = 'bold 10px sans-serif';
+  g.fillText('L P E D', 100, 210);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['E', 'A', 'Z'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'E' ? 'PASS' : 'SCORE', opt === 'E' ? 'PASS' : 'SCORE', 'Acuity knowledge check.', () => snellenStage(root), opt !== 'E'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function letterIsolationStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'What is the middle letter in the image?';
+  
+  const c = makeCanvas(200, 100);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.fillStyle = '#000';
+  g.font = 'bold 40px sans-serif';
+  g.fillText('X Y Z', 100, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['X', 'Y', 'Z'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Y' ? 'PASS' : 'SCORE', opt === 'Y' ? 'PASS' : 'SCORE', 'Crowding check.', () => letterIsolationStage(root), opt !== 'Y'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function blurryTextStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Which word is clear?';
+  
+  const c = makeCanvas(240, 100);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.font = 'bold 30px sans-serif';
+  g.filter = 'blur(3px)';
+  g.fillStyle = '#000';
+  g.fillText('CAT', 60, 60);
+  g.filter = 'none';
+  g.fillText('DOG', 180, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['CAT', 'DOG'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'DOG' ? 'PASS' : 'SCORE', opt === 'DOG' ? 'PASS' : 'SCORE', 'Acuity check.', () => blurryTextStage(root), opt !== 'DOG'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function astigmatismWheelStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Do some lines look darker than others?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.strokeStyle = '#000';
+  g.lineWidth = 2;
+  g.translate(120, 120);
+  for(let i=0; i<12; i++) {
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.lineTo(100, 0);
+    g.stroke();
+    g.rotate(Math.PI / 6);
+  }
+  g.translate(-120, -120);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'No' ? 'PASS' : 'SCORE', opt === 'No' ? 'PASS' : 'SCORE', 'Astigmatism check.', () => astigmatismWheelStage(root), opt !== 'No'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function blurryClearStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Which is clearer: A or B?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.font = 'bold 30px sans-serif';
+  g.fillStyle = '#000';
+  g.fillText('A', 60, 40);
+  g.fillText('B', 180, 40);
+  
+  g.filter = 'none';
+  g.beginPath(); g.arc(60, 90, 30, 0, 7); g.stroke();
+  g.filter = 'blur(2px)';
+  g.beginPath(); g.arc(180, 90, 30, 0, 7); g.stroke();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['A', 'B'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'A' ? 'PASS' : 'SCORE', opt === 'A' ? 'PASS' : 'SCORE', 'Clarity check.', () => blurryClearStage(root), opt !== 'A'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function nearFarStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you quickly switch focus from screen to 20ft away?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = '#000';
+  g.beginPath(); g.arc(60, 70, 5, 0, 7); g.fill();
+  g.beginPath(); g.arc(180, 70, 30, 0, 7); g.fill();
+  g.textAlign = 'center';
+  g.fillText('Near', 60, 120);
+  g.fillText('Far', 180, 120);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Accommodation check.', () => nearFarStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function threeDDotStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Does the red dot appear closer than the blue one?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = 'blue';
+  g.beginPath(); g.arc(100, 70, 40, 0, 7); g.fill();
+  g.fillStyle = 'rgba(255,0,0,0.8)';
+  g.beginPath(); g.arc(140, 70, 40, 0, 7); g.fill();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Stereo vision check.', () => threeDDotStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function overlappingShapesStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Which shape is in front?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.fillStyle = 'blue';
+  g.beginPath(); g.arc(100, 100, 60, 0, 7); g.fill();
+  g.fillStyle = 'red';
+  g.fillRect(80, 80, 100, 100);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Square', 'Circle'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Square' ? 'PASS' : 'SCORE', opt === 'Square' ? 'PASS' : 'SCORE', 'Depth cue check.', () => overlappingShapesStage(root), opt !== 'Square'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function shadowDepthStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'If shadow is below an object, does it look floating?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.fillStyle = '#ccc';
+  g.beginPath(); g.ellipse(120, 180, 50, 10, 0, 0, 7); g.fill();
+  g.fillStyle = '#333';
+  g.beginPath(); g.arc(120, 100, 40, 0, 7); g.fill();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Shadow depth check.', () => shadowDepthStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function glareSensitivityStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you read past a bright glare spot?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = '#000';
+  g.font = 'bold 30px sans-serif';
+  g.textAlign = 'center';
+  g.fillText('GLARE', 120, 80);
+  
+  const grad = g.createRadialGradient(120, 80, 0, 120, 80, 60);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0,0,240,140);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Glare check.', () => glareSensitivityStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function brightnessToleranceStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Is a very bright white screen uncomfortable?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = '#fff';
+  g.fillRect(0,0,240,140);
+  g.fillStyle = '#ddd';
+  g.font = 'bold 20px sans-serif';
+  g.textAlign = 'center';
+  g.fillText('BRIGHT', 120, 80);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'No' ? 'PASS' : 'SCORE', opt === 'No' ? 'PASS' : 'SCORE', 'Light sensitivity check.', () => brightnessToleranceStage(root), opt !== 'No'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function peripheralVisionStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'While looking at center, can you see movement on edges?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = '#000';
+  g.beginPath(); g.arc(120, 70, 10, 0, 7); g.fill();
+  
+  let drawState = 0;
+  const iv = setInterval(() => {
+    if(!root.isConnected) { clearInterval(iv); return; }
+    g.clearRect(0,0,240,140);
+    g.fillStyle = '#000';
+    g.beginPath(); g.arc(120, 70, 10, 0, 7); g.fill();
+    
+    if(drawState % 2 === 0) {
+      g.fillStyle = 'red';
+      g.beginPath(); g.arc(20, 70, 10, 0, 7); g.fill();
+      g.beginPath(); g.arc(220, 70, 10, 0, 7); g.fill();
+    }
+    drawState++;
+  }, 500);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => { clearInterval(iv); showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Peripheral check.', () => peripheralVisionStage(root), opt !== 'Yes'); });
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function movingTargetStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you track a smoothly moving dot without jumping eyes?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  let x = 0;
+  let raf;
+  
+  function anim() {
+    if(!root.isConnected) return;
+    g.clearRect(0,0,240,140);
+    x = (x + 2) % 240;
+    g.fillStyle = '#000';
+    g.beginPath(); g.arc(x, 70, 10, 0, 7); g.fill();
+    raf = requestAnimationFrame(anim);
+  }
+  anim();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => { cancelAnimationFrame(raf); showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Pursuit tracking check.', () => movingTargetStage(root), opt !== 'Yes'); });
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function rapidTapStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you quickly tap appearing targets?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  let tx = 120, ty = 120;
+  
+  function drawT() {
+    g.clearRect(0,0,240,240);
+    g.fillStyle = 'red';
+    g.beginPath(); g.arc(tx, ty, 20, 0, 7); g.fill();
+  }
+  drawT();
+  
+  c.addEventListener('click', (e) => {
+    const rect = c.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 240;
+    const y = (e.clientY - rect.top) / rect.height * 240;
+    if(Math.hypot(x-tx, y-ty) < 30) {
+      tx = 20 + rand(200);
+      ty = 20 + rand(200);
+      drawT();
+    }
+  });
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Saccade and coordination check.', () => rapidTapStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function wordRecognitionStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you read the middle word: xxAPPLExx';
+  
+  const c = makeCanvas(240, 100);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.font = 'bold 30px sans-serif';
+  g.fillStyle = '#555';
+  g.fillText('xx', 60, 60);
+  g.fillStyle = '#000';
+  g.fillText('APPLE', 120, 60);
+  g.fillStyle = '#555';
+  g.fillText('xx', 180, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['APPLE', 'PEAR'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'APPLE' ? 'PASS' : 'SCORE', opt === 'APPLE' ? 'PASS' : 'SCORE', 'Flanker check.', () => wordRecognitionStage(root), opt !== 'APPLE'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function dyslexiaScreeningStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Which is correct: b or d for dog?';
+  
+  const c = makeCanvas(240, 100);
+  const g = ctx2d(c);
+  g.textAlign = 'center';
+  g.font = 'bold 40px sans-serif';
+  g.fillStyle = '#000';
+  g.fillText('b', 80, 60);
+  g.fillText('d', 160, 60);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['b', 'd'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'd' ? 'PASS' : 'SCORE', opt === 'd' ? 'PASS' : 'SCORE', 'Symbol orientation check.', () => dyslexiaScreeningStage(root), opt !== 'd'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function eyeTrainingStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Did you follow the pencil pushup exercise?';
+  
+  const c = makeCanvas(240, 240);
+  const g = ctx2d(c);
+  g.fillStyle = '#ffd700';
+  g.fillRect(110, 20, 20, 160);
+  g.fillStyle = '#000';
+  g.beginPath(); g.moveTo(110, 180); g.lineTo(130, 180); g.lineTo(120, 210); g.fill();
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Flexibility check.', () => eyeTrainingStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+function colorSensitivityStage(root) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.textContent = 'Can you see subtle shifts in pastel colors?';
+  
+  const c = makeCanvas(240, 140);
+  const g = ctx2d(c);
+  g.fillStyle = 'rgb(255, 240, 240)';
+  g.fillRect(20, 20, 90, 100);
+  g.fillStyle = 'rgb(255, 235, 235)';
+  g.fillRect(130, 20, 90, 100);
+  
+  wrap.appendChild(head);
+  wrap.appendChild(c);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  ['Yes', 'No'].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => showResult(wrap, opt === 'Yes' ? 'PASS' : 'SCORE', opt === 'Yes' ? 'PASS' : 'SCORE', 'Subtle color check.', () => colorSensitivityStage(root), opt !== 'Yes'));
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
 
 function simpleTest(root, title, question, options, correct, detail, restartFunc) {
   root.innerHTML = '';
