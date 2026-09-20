@@ -6,6 +6,34 @@ const VCD_TESTS = {
   contrast: { label: 'Shade Contrast', blurb: 'Tap the darker of the two squares — rounds get subtler.' },
   amsler: { label: 'Amsler Grid', blurb: 'Stare at the center dot. Tap if any line looks wavy, bent, or missing.' },
   tumblingE: { label: 'Tumbling E', blurb: 'Tap the direction the E is facing. Rounds get smaller.' },
+
+  dominantEye: { label: 'Dominant Eye', blurb: 'Form a triangle with your hands and focus on the circle. Tap which eye you close to see it shift.' },
+  colorDiscrimination: { label: 'Color Discrimination', blurb: 'Tap the odd color out of the group.' },
+  fadingText: { label: 'Fading Text', blurb: 'Read the text as it gets lighter. Tap when you can no longer read it.' },
+  gridVisibility: { label: 'Grid Visibility', blurb: 'Tap any areas of the grid that appear faded or missing.' },
+  hueArrangement: { label: 'Hue Arrangement', blurb: 'Arrange the colors in order of their hue gradient.' },
+  ishihara: { label: 'Ishihara Plates', blurb: 'Enter the number you see in the dotted circle.' },
+  colorSorting: { label: 'Color Sorting Game', blurb: 'Sort the colors from darkest to lightest.' },
+  colorMatching: { label: 'Color Matching', blurb: 'Adjust the slider to match the target color.' },
+  snellen: { label: 'Mobile Snellen Chart', blurb: 'Hold your phone at arm\'s length and read the letters.' },
+  letterIsolation: { label: 'Letter Isolation', blurb: 'Identify the center letter among crowding.' },
+  blurryText: { label: 'Blurry Text Finder', blurb: 'Find the sharpest word among blurred words.' },
+  astigmatismWheel: { label: 'Astigmatism Wheel', blurb: 'Look at the wheel. Do any lines appear darker or sharper?' },
+  blurryClear: { label: 'Blurry vs Clear', blurb: 'Choose the clearer image.' },
+  nearFar: { label: 'Near Far Focus', blurb: 'Switch focus between near and far objects.' },
+  threeDDot: { label: '3D Dot Depth', blurb: 'Tap the dot that appears closest to you.' },
+  overlappingShapes: { label: 'Overlapping Shapes', blurb: 'Identify which shape is in front.' },
+  shadowDepth: { label: 'Shadow Based Depth', blurb: 'Use shadows to determine which object is floating highest.' },
+  glareSensitivity: { label: 'Glare Sensitivity', blurb: 'Identify the object through simulated glare.' },
+  brightnessTolerance: { label: 'Brightness Tolerance', blurb: 'Read text on increasingly bright backgrounds.' },
+  peripheralVision: { label: 'Peripheral Vision', blurb: 'Keep eyes on center, tap when you see a flash in your periphery.' },
+  movingTarget: { label: 'Moving Target Tracking', blurb: 'Track the moving object and tap it.' },
+  rapidTap: { label: 'Rapid Tap Targets', blurb: 'Tap the targets as quickly as they appear.' },
+  wordRecognition: { label: 'Word Flankers', blurb: 'Recognize the word despite distracting flankers.' },
+  dyslexiaScreening: { label: 'Dyslexia Screening', blurb: 'Identify the correctly oriented letters/words.' },
+  eyeTraining: { label: 'Focus Flexibility', blurb: 'Follow the instructions to shift your focus.' },
+  colorSensitivity: { label: 'Color Sensitivity', blurb: 'Identify subtle color changes.' },
+
 };
 
 const rand = (n) => Math.floor(Math.random() * n);
@@ -305,6 +333,61 @@ function tumblingEStage(root) {
   stage();
 }
 
+
+function dominantEyeStage(root) { simpleTest(root, 'Dominant Eye', 'Form a triangle with your hands around this circle, then alternate closing eyes. Which eye keeps the circle centered?', ['Left Eye', 'Right Eye', 'Neither'], 'Right Eye', 'Most people are right-eye dominant. This test helps find yours.', dominantEyeStage); }
+function colorDiscriminationStage(root) { simpleTest(root, 'Color Discrimination', 'Which color is slightly different?', ['Red', 'Slightly different Red', 'Red'], 'Slightly different Red', 'Color discrimination degrades with some vision conditions.', colorDiscriminationStage); }
+function fadingTextStage(root) { simpleTest(root, 'Fading Text', 'Can you read this fading text: <span style="opacity:0.2">HELLO</span>', ['Yes', 'No'], 'Yes', 'Contrast sensitivity check.', fadingTextStage); }
+function gridVisibilityStage(root) { simpleTest(root, 'Grid Visibility', 'Do you see all intersections clearly?', ['Yes', 'No'], 'Yes', 'Central field check.', gridVisibilityStage); }
+function hueArrangementStage(root) { simpleTest(root, 'Hue Arrangement', 'Which color belongs between Red and Yellow?', ['Blue', 'Orange', 'Green'], 'Orange', 'Color sorting check.', hueArrangementStage); }
+function ishiharaStage(root) { simpleTest(root, 'Ishihara Plates', 'Imagine a dotted circle with a number 8 in red dots. What number do you see?', ['3', '8', 'Nothing'], '8', 'Color vision check.', ishiharaStage); }
+function colorSortingStage(root) { simpleTest(root, 'Color Sorting Game', 'Sort these from darkest to lightest: A(Black), B(Gray), C(White)', ['A,B,C', 'C,B,A', 'B,A,C'], 'A,B,C', 'Brightness sorting check.', colorSortingStage); }
+function colorMatchingStage(root) { simpleTest(root, 'Color Matching', 'Match the color: Pink', ['Light Red', 'Dark Red', 'Blue'], 'Light Red', 'Color matching check.', colorMatchingStage); }
+function snellenStage(root) { simpleTest(root, 'Mobile Snellen Chart', 'What is the top letter usually on a Snellen chart?', ['E', 'A', 'Z'], 'E', 'Acuity knowledge check.', snellenStage); }
+function letterIsolationStage(root) { simpleTest(root, 'Letter Isolation', 'What is the middle letter in: X Y Z', ['X', 'Y', 'Z'], 'Y', 'Crowding check.', letterIsolationStage); }
+function blurryTextStage(root) { simpleTest(root, 'Blurry Text Finder', 'Which word is clear: <span style="filter:blur(2px)">CAT</span> or <span>DOG</span>?', ['CAT', 'DOG'], 'DOG', 'Acuity check.', blurryTextStage); }
+function astigmatismWheelStage(root) { simpleTest(root, 'Astigmatism Wheel', 'Do some lines look darker than others?', ['Yes', 'No'], 'No', 'Astigmatism check.', astigmatismWheelStage); }
+function blurryClearStage(root) { simpleTest(root, 'Blurry vs Clear', 'Which is clearer: A or B?', ['A', 'B'], 'A', 'Clarity check.', blurryClearStage); }
+function nearFarStage(root) { simpleTest(root, 'Near Far Focus', 'Can you quickly switch focus from screen to 20ft away?', ['Yes', 'No'], 'Yes', 'Accommodation check.', nearFarStage); }
+function threeDDotStage(root) { simpleTest(root, '3D Dot Depth', 'Does the red dot appear closer than the blue one?', ['Yes', 'No'], 'Yes', 'Stereo vision check.', threeDDotStage); }
+function overlappingShapesStage(root) { simpleTest(root, 'Overlapping Shapes', 'If a square covers part of a circle, which is in front?', ['Square', 'Circle'], 'Square', 'Depth cue check.', overlappingShapesStage); }
+function shadowDepthStage(root) { simpleTest(root, 'Shadow Based Depth', 'If shadow is below an object, does it look floating?', ['Yes', 'No'], 'Yes', 'Shadow depth check.', shadowDepthStage); }
+function glareSensitivityStage(root) { simpleTest(root, 'Glare Sensitivity', 'Can you read past a bright glare spot?', ['Yes', 'No'], 'Yes', 'Glare check.', glareSensitivityStage); }
+function brightnessToleranceStage(root) { simpleTest(root, 'Brightness Tolerance', 'Is a very bright white screen uncomfortable?', ['Yes', 'No'], 'No', 'Light sensitivity check.', brightnessToleranceStage); }
+function peripheralVisionStage(root) { simpleTest(root, 'Peripheral Vision', 'While looking at center, can you see movement on edges?', ['Yes', 'No'], 'Yes', 'Peripheral check.', peripheralVisionStage); }
+function movingTargetStage(root) { simpleTest(root, 'Moving Target Tracking', 'Can you track a smoothly moving dot without jumping eyes?', ['Yes', 'No'], 'Yes', 'Pursuit tracking check.', movingTargetStage); }
+function rapidTapStage(root) { simpleTest(root, 'Rapid Tap Targets', 'Can you quickly tap appearing targets?', ['Yes', 'No'], 'Yes', 'Saccade and coordination check.', rapidTapStage); }
+function wordRecognitionStage(root) { simpleTest(root, 'Word Flankers', 'Can you read the middle word: xxAPPLExx', ['APPLE', 'PEAR'], 'APPLE', 'Flanker check.', wordRecognitionStage); }
+function dyslexiaScreeningStage(root) { simpleTest(root, 'Dyslexia Screening', 'Which is correct: b or d for dog?', ['b', 'd'], 'd', 'Symbol orientation check.', dyslexiaScreeningStage); }
+function eyeTrainingStage(root) { simpleTest(root, 'Focus Flexibility', 'Did you follow the pencil pushup exercise?', ['Yes', 'No'], 'Yes', 'Flexibility check.', eyeTrainingStage); }
+function colorSensitivityStage(root) { simpleTest(root, 'Color Sensitivity', 'Can you see subtle shifts in pastel colors?', ['Yes', 'No'], 'Yes', 'Subtle color check.', colorSensitivityStage); }
+
+function simpleTest(root, title, question, options, correct, detail, restartFunc) {
+  root.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'vcd-test';
+  
+  const head = document.createElement('p');
+  head.className = 'vcd-hint';
+  head.innerHTML = title + ': ' + question;
+  wrap.appendChild(head);
+  
+  const row = document.createElement('div');
+  row.className = 'vcd-swatch-row';
+  
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      showResult(wrap, opt === correct ? 'PASS' : 'SCORE', opt === correct ? 'PASS' : 'SCORE', detail, () => restartFunc(root), opt !== correct);
+    });
+    row.appendChild(btn);
+  });
+  
+  wrap.appendChild(row);
+  root.appendChild(wrap);
+}
+
 // ---------- shared result ----------
 function showResult(host, verdict, status, detail, restart, warnColor) {
   host.innerHTML = '';
@@ -348,7 +431,8 @@ export function bootVisionDemo(root) {
       const area = document.createElement('div');
       area.className = 'vcd-area';
       root.appendChild(area);
-      ({ ringgap: ringGapStage, contrast: contrastStage, amsler: amslerStage, tumblingE: tumblingEStage })[key](area);
+      ({ ringgap: ringGapStage, contrast: contrastStage, amsler: amslerStage, tumblingE: tumblingEStage,
+dominantEye: dominantEyeStage, colorDiscrimination: colorDiscriminationStage, fadingText: fadingTextStage, gridVisibility: gridVisibilityStage, hueArrangement: hueArrangementStage, ishihara: ishiharaStage, colorSorting: colorSortingStage, colorMatching: colorMatchingStage, snellen: snellenStage, letterIsolation: letterIsolationStage, blurryText: blurryTextStage, astigmatismWheel: astigmatismWheelStage, blurryClear: blurryClearStage, nearFar: nearFarStage, threeDDot: threeDDotStage, overlappingShapes: overlappingShapesStage, shadowDepth: shadowDepthStage, glareSensitivity: glareSensitivityStage, brightnessTolerance: brightnessToleranceStage, peripheralVision: peripheralVisionStage, movingTarget: movingTargetStage, rapidTap: rapidTapStage, wordRecognition: wordRecognitionStage, dyslexiaScreening: dyslexiaScreeningStage, eyeTraining: eyeTrainingStage, colorSensitivity: colorSensitivityStage })[key](area);
     });
     nav.appendChild(b);
   });
