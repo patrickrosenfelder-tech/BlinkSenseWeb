@@ -21,6 +21,10 @@ const CLOSURE_ENTRY_YAW_THRESHOLD = 0.20;     // strict > : yaw=0.20 is allowed,
 // PAT-925 Fix 3: Reopen must reach >= 72% of warmup baseline; EWMA adapts only from
 // frames >= 80% of initial baseline so squinting-while-stable cannot erode thresholds.
 const MIN_REOPEN_RATIO = 0.72;   // belt-and-suspenders floor on the acceptance path (aligned with CLOSE_RATIO)
+// Once adaptation has inverted the warmup floor, retain a scalar lower bound
+// that rejects the existing partial-squeeze trace (EAR=0.21) while allowing
+// the trace-derived post-drift reopens (EAR=0.224+).
+const POST_DRIFT_MIN_REOPEN_EAR = 0.22;
 const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
 // A genuine closure must achieve sufficient depth (min EAR <= 65% of open baseline),
 // rejecting shallow threshold oscillations/flutter (e.g. EAR 0.215/0.217 at baseline 0.30).
@@ -245,11 +249,14 @@ export class BlinkStateMachine {
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_shallow_closure' };
       }
-      // PAT-925 Fix 3: belt-and-suspenders reopen floor. Requires EAR at reopen to be
-      // at least MIN_REOPEN_RATIO of the session's warmup baseline. Partial squeezes where
-      // the eye never returns to a genuinely open position are rejected regardless of
-      // how far the adapted openBaseline has drifted.
-      if (this.initialBaseline > 0 && ear < MIN_REOPEN_RATIO * this.initialBaseline) {
+      // PAT-1032: after legitimate adaptation, the adaptive threshold is the
+      // authoritative floor, but the absolute partial-squeeze floor remains
+      // active. This handles the threshold inversion without turning the
+      // existing shallow reopen (0.21) into a blink.
+      const adaptiveFloorHasInverted = currentReopenThreshold < MIN_REOPEN_RATIO * this.initialBaseline;
+      const belowReopenFloor = adaptiveFloorHasInverted &&
+        ear < POST_DRIFT_MIN_REOPEN_EAR;
+      if (belowReopenFloor) {
         const event = this.buildDiagnosticEvent('partial_reopen', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_partial_reopen' };
