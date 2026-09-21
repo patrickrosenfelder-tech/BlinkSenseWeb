@@ -175,7 +175,13 @@ export class BlinkStateMachine {
     // The threshold scales with observed FPS: at 3 FPS (333ms interval) effectiveMax=2664ms;
     // at 30 FPS (33ms interval) effectiveMax=600ms — preserving prior behaviour.
     const effectiveMaxClosureMs = Math.max(BASE_MAX_CLOSURE_MS, this.lastFrameIntervalMs * STALE_FRAMES_THRESHOLD);
-    if (this.state === 'closed' && (timestampMs - this.closedAt) > effectiveMaxClosureMs) {
+    // A low-cadence sensor can deliver the first post-closure sample after the
+    // stale-closure deadline. If that sample is already above the close exit
+    // boundary, it is cadence-delayed reopen evidence, not stale closed-eye
+    // evidence. Preserve expiry for samples that remain genuinely closed.
+    const cadenceDelayedReopen = this.state === 'closed' &&
+      ear > this.openBaseline * CLOSE_RATIO;
+    if (this.state === 'closed' && (timestampMs - this.closedAt) > effectiveMaxClosureMs && !cadenceDelayedReopen) {
       const durationMs = timestampMs - this.closedAt;
       const event = this.buildDiagnosticEvent('closure_expired', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
       this.record(this.rejectedEvents, event);
