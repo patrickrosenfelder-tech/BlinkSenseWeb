@@ -39,6 +39,7 @@ export class BlinkStateMachine {
     this.closedAt = null;
     this.minClosedEar = Infinity; // Track closure trough depth
     this.closureEntryBaseline = null; // Baseline captured at closure entry
+    this.closureEntryStable = null; // Stability verdict captured at closure entry
     this.lastClosureStartedAt = -Infinity; // PAT-925 Fix 1: refractory compares close-to-close
     this.lastAcceptedAt = -Infinity;       // kept for diagnostics/observability
     this.blinkCount = 0;
@@ -56,6 +57,7 @@ export class BlinkStateMachine {
     this.closedAt = null;
     this.minClosedEar = Infinity;
     this.closureEntryBaseline = null;
+    this.closureEntryStable = null;
     this.warmupUntil = null;
     this.stabilityFrames = [];
     this.lastProcessedTimestampMs = null;
@@ -183,12 +185,14 @@ export class BlinkStateMachine {
       ear > this.openBaseline * CLOSE_RATIO;
     if (this.state === 'closed' && (timestampMs - this.closedAt) > effectiveMaxClosureMs && !cadenceDelayedReopen) {
       const durationMs = timestampMs - this.closedAt;
-      const event = this.buildDiagnosticEvent('closure_expired', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+      const closureEntryStable = this.closureEntryStable;
+      const event = this.buildDiagnosticEvent('closure_expired', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
       this.record(this.rejectedEvents, event);
       this.state = 'open';
       this.closedAt = null;
       this.minClosedEar = Infinity;
       this.closureEntryBaseline = null;
+      this.closureEntryStable = null;
       return { blinked: false, decision: 'rejected_closure_expired' };
     }
 
@@ -210,7 +214,8 @@ export class BlinkStateMachine {
     if (this.state === 'open' && isClosed) {
       // PAT-925 Fix 2: Gate new closure entry on high-velocity motion. The reopen path
       // is NEVER gated — a closure already in progress always completes.
-      if (!this.isClosureEntryStable()) {
+      const closureEntryStable = this.isClosureEntryStable();
+      if (!closureEntryStable) {
         const event = this.buildDiagnosticEvent('closure_entry_unstable', this.state, { timestampMs, ear, motion, yawProxy });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_unstable' };
@@ -228,6 +233,7 @@ export class BlinkStateMachine {
       this.lastClosureStartedAt = timestampMs; // PAT-925: anchor for next refractory check
       this.minClosedEar = ear;
       this.closureEntryBaseline = this.openBaseline;
+      this.closureEntryStable = closureEntryStable;
       return { blinked: false, decision: 'closure_started' };
     }
 
@@ -239,19 +245,29 @@ export class BlinkStateMachine {
       const durationMs = timestampMs - this.closedAt;
       const minClosedEar = this.minClosedEar;
       const closureEntryBaseline = this.closureEntryBaseline ?? this.openBaseline;
+      const closureEntryStable = this.closureEntryStable;
       this.state = 'open';
       this.closedAt = null;
       this.minClosedEar = Infinity;
       this.closureEntryBaseline = null;
+      this.closureEntryStable = null;
+      // The entry gate normally prevents this case before a closure begins. Keep
+      // the captured verdict on the in-flight candidate as a defensive admission
+      // check, including after tracking interruptions/recovery.
+      if (closureEntryStable === false) {
+        const event = this.buildDiagnosticEvent('closure_entry_unstable', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: false } });
+        this.record(this.rejectedEvents, event);
+        return { blinked: false, decision: 'rejected_unstable' };
+      }
       if (durationMs < MIN_CLOSURE_MS) {
-        const event = this.buildDiagnosticEvent('closure_too_short', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+        const event = this.buildDiagnosticEvent('closure_too_short', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_short_closure' };
       }
       // Closure depth gate: rejects shallow threshold oscillations/flutter that never reached true closure depth.
       // Evaluated against closureEntryBaseline captured at closure start, so reopen adaptation cannot shift the verdict.
       if (minClosedEar > MAX_CLOSURE_DEPTH_RATIO * closureEntryBaseline) {
-        const event = this.buildDiagnosticEvent('shallow_closure', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, minClosedEar, closureEntryBaseline } });
+        const event = this.buildDiagnosticEvent('shallow_closure', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, minClosedEar, closureEntryBaseline, entryStable: closureEntryStable } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_shallow_closure' };
       }
@@ -263,13 +279,13 @@ export class BlinkStateMachine {
       const belowReopenFloor = adaptiveFloorHasInverted &&
         ear < POST_DRIFT_MIN_REOPEN_EAR;
       if (belowReopenFloor) {
-        const event = this.buildDiagnosticEvent('partial_reopen', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+        const event = this.buildDiagnosticEvent('partial_reopen', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_partial_reopen' };
       }
       this.blinkCount++;
       this.lastAcceptedAt = timestampMs;
-      const event = this.buildDiagnosticEvent('accepted_blink', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs } });
+      const event = this.buildDiagnosticEvent('accepted_blink', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
       this.record(this.acceptedEvents, event);
       return { blinked: true, decision: 'accepted_blink', event };
     }

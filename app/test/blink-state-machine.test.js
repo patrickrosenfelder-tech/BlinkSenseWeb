@@ -336,6 +336,67 @@ test('PAT-925: fast head shake (motion > gate threshold) blocks new closure entr
   assert.equal(machine.blinkCount, 0, 'Fast head shake must count 0 blinks');
 });
 
+// PAT-1093: Android head-shake exports contained accepted events labelled
+// entryStable=false because diagnostics re-evaluated the moving stability
+// window at reopen. Keep the entry verdict attached to the in-flight closure.
+test('PAT-1093: stable-entry control still counts when reopen occurs during a head shake', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+
+  let result = machine.process({ timestampMs: 700, ear: CLOSED_EAR, motion: 0, yawProxy: 0 });
+  assert.equal(result.decision, 'closure_started');
+  result = machine.process({ timestampMs: 850, ear: OPEN_EAR, motion: 0.005, yawProxy: 0.1 });
+
+  assert.equal(result.decision, 'accepted_blink');
+  assert.equal(machine.blinkCount, 1);
+  assert.equal(result.event.entryStable, true, 'accepted diagnostics must report the captured entry verdict');
+});
+
+test('PAT-1093: every Android accepted diagnostic flagged entryStable=false has a zero-count unstable-entry fixture', () => {
+  // doc_9a6b77729d73 exports only terminal candidate diagnostics, not the
+  // preceding raw closure-entry frame. Preserve every flagged terminal row
+  // here and pair it with a deterministic above-gate entry scalar.
+  const exportedUnstableAccepts = [
+    { timestampMs: 57047.6, motion: 0.0008709674534935703 },
+    { timestampMs: 57765.8, motion: 0.00017926262915654128 },
+    { timestampMs: 66036.5, motion: 0.0010981045419667036 },
+    { timestampMs: 104248.9, motion: 0.0008346636627893032 },
+    { timestampMs: 115192.8, motion: 0.0009488878901551942 },
+    { timestampMs: 115527, motion: 0.0018238991266309069 },
+    { timestampMs: 116195.3, motion: 0.0015991236301385891 },
+  ];
+  for (const exportedEvent of exportedUnstableAccepts) {
+    const machine = new BlinkStateMachine();
+    frame(machine, 0, OPEN_EAR);
+    frame(machine, 600, OPEN_EAR);
+    const result = machine.process({ timestampMs: exportedEvent.timestampMs - 150, ear: CLOSED_EAR, motion: 0.005, yawProxy: 0.1 });
+    assert.equal(result.decision, 'rejected_unstable', `export event at ${exportedEvent.timestampMs}`);
+    machine.process({ timestampMs: exportedEvent.timestampMs, ear: OPEN_EAR, motion: exportedEvent.motion, yawProxy: 0 });
+    assert.equal(machine.blinkCount, 0, `export event at ${exportedEvent.timestampMs}`);
+    assert.equal(machine.state, 'open', `export event at ${exportedEvent.timestampMs}`);
+    assert.equal(machine.getDiagnostics().rejectedEvents.at(-1).reason, 'closure_entry_unstable');
+  }
+});
+
+test('PAT-1093: face-loss recovery cannot reuse a stale stable-entry verdict', () => {
+  const machine = new BlinkStateMachine();
+  frame(machine, 0, OPEN_EAR);
+  frame(machine, 600, OPEN_EAR);
+  machine.process({ timestampMs: 700, ear: CLOSED_EAR, motion: 0, yawProxy: 0 });
+  assert.equal(machine.state, 'closed');
+
+  machine.resetTracking(); // face lost
+  frame(machine, 900, OPEN_EAR); // face recovered; new warmup begins
+  frame(machine, 1500, OPEN_EAR);
+  const result = machine.process({ timestampMs: 1600, ear: CLOSED_EAR, motion: 0.005, yawProxy: 0.1 });
+
+  assert.equal(result.decision, 'rejected_unstable');
+  assert.equal(machine.blinkCount, 0);
+  assert.equal(machine.state, 'open');
+  assert.equal(machine.getDiagnostics().rejectedEvents.at(-1).reason, 'closure_entry_unstable');
+});
+
 // Fix 2: Slow head movement (motion below gate) must allow genuine blinks.
 test('PAT-925: genuine blink during slow head movement (low motion) counts as 1', () => {
   const machine = new BlinkStateMachine();

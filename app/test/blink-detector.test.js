@@ -415,3 +415,60 @@ test('PAT-925: face_found_resume fires when landmarks re-appear after a face_not
   assert.ok('gapMs' in resumeEvents[0],
     'face_found_resume must include gapMs field describing dropout duration');
 });
+
+// PAT-1093: the closure-entry gate is supposed to block blinks that start during
+// a head shake, using both nose-velocity (`motion`) and head-rotation (`yawProxy`)
+// signals. But yawProxy was computed as `1.0 - matrix[10]` against the MediaPipe
+// `Matrix` result object, which exposes its values under `matrix.data[10]`, not a
+// direct numeric index — `matrix[10]` is always `undefined`, so yawProxy is always
+// NaN and the rotation half of the entry gate never fires. A real head-turn/shake
+// with little nose translation (rotation without much translation) then sails
+// through the gate and gets counted as a blink.
+test('PAT-1093: head rotation with negligible nose translation is blocked at closure entry (not silently admitted via NaN yawProxy)', () => {
+  const detector = new BlinkDetector();
+  const makeFace = (isOpen) => {
+    const face = new Array(468).fill({ x: 0.5, y: 0.5, z: 0.1 });
+    const spread = isOpen ? 0.05 : 0.005;
+    face[160] = { x: 0.5, y: 0.5 - spread, z: 0.1 }; face[158] = { x: 0.5, y: 0.5 - spread, z: 0.1 };
+    face[153] = { x: 0.5, y: 0.5 + spread, z: 0.1 }; face[144] = { x: 0.5, y: 0.5 + spread, z: 0.1 };
+    face[33] = { x: 0.4, y: 0.5, z: 0.1 }; face[133] = { x: 0.6, y: 0.5, z: 0.1 };
+    face[385] = { x: 0.5, y: 0.5 - spread, z: 0.1 }; face[387] = { x: 0.5, y: 0.5 - spread, z: 0.1 };
+    face[373] = { x: 0.5, y: 0.5 + spread, z: 0.1 }; face[380] = { x: 0.5, y: 0.5 + spread, z: 0.1 };
+    face[362] = { x: 0.4, y: 0.5, z: 0.1 }; face[263] = { x: 0.6, y: 0.5, z: 0.1 };
+    return face;
+  };
+
+  // A real MediaPipe FaceLandmarker Matrix result: { rows, columns, data }.
+  // data[10] is the rotation matrix's R[2][2] term; 0.5 models a substantial
+  // head turn/shake (yawProxy = 1.0 - 0.5 = 0.5, well past the 0.20 gate).
+  const rotatedMatrix = { rows: 4, columns: 4, data: new Array(16).fill(0) };
+  rotatedMatrix.data[10] = 0.5;
+
+  let currentFace = makeFace(true);
+  detector.landmarker = {
+    detectForVideo: () => ({ faceLandmarks: [currentFace], facialTransformationMatrixes: [rotatedMatrix] })
+  };
+
+  const mockVideo = { currentTime: 0, videoWidth: 640, videoHeight: 480 };
+
+  // Warm up and settle with the head already rotated but the nose landmark held
+  // fixed, so nose-velocity `motion` stays 0 and only the rotation signal can gate.
+  for (let i = 0; i < 20; i++) {
+    mockVideo.currentTime = i;
+    detector.detectFrame(mockVideo, 1000 + i * 33);
+  }
+
+  currentFace = makeFace(false); // eyes close while still rotated
+  mockVideo.currentTime = 20;
+  const closeResult = detector.detectFrame(mockVideo, 1000 + 20 * 33);
+
+  assert.equal(closeResult.decision, 'rejected_unstable',
+    `closure entry during head rotation must be rejected, got '${closeResult.decision}'`);
+
+  currentFace = makeFace(true); // reopen shortly after
+  mockVideo.currentTime = 21;
+  const reopenResult = detector.detectFrame(mockVideo, 1000 + 21 * 33);
+
+  assert.equal(reopenResult.blinked, false, 'rotation-only head shake must never be counted as a blink');
+  assert.equal(detector.machine.blinkCount, 0, 'blinkCount must stay 0 for a head rotation with no eyelid closure intent');
+});

@@ -226,7 +226,10 @@ export class BlinkDetector {
     const matrix = result.facialTransformationMatrixes?.[0];
     let yawProxy = 0;
     if (matrix) {
-      yawProxy = Math.max(0, 1.0 - matrix[10]);
+      // PAT-1093: Matrix is { rows, columns, data }, not a flat indexable array —
+      // matrix[10] was always undefined, so yawProxy was always NaN and the
+      // closure-entry gate's rotation check never fired.
+      yawProxy = Math.max(0, 1.0 - matrix.data[10]);
     } else {
       const zDiff = Math.abs(landmarks[263].z - landmarks[33].z);
       const xDiff = Math.abs(landmarks[263].x - landmarks[33].x);
