@@ -32,10 +32,6 @@ export class BlinkTracker {
 
   async enableCamera(videoEl) {
     this.video = videoEl;
-    if (!this.modelReady) {
-      await this.detector.load();
-      this.modelReady = true;
-    }
     this.stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       audio: false,
@@ -44,8 +40,12 @@ export class BlinkTracker {
     await videoEl.play();
   }
 
-  start() {
+  async start() {
     if (this.running || !this.stream) return;
+    if (!this.modelReady) {
+      await this.detector.load();
+      this.modelReady = true;
+    }
     this.running = true;
     this.detector.resetSession();
     this.blinkCount = 0;

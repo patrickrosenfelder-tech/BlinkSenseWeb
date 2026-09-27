@@ -15,7 +15,7 @@ export function el(tag, attrs = {}, children = []) {
   }
   const list = Array.isArray(children) ? children : [children];
   for (const child of list) {
-    if (child == null) continue;
+    if (child == null || typeof child === 'boolean') continue;
     node.appendChild(typeof child === 'string' || typeof child === 'number' ? document.createTextNode(String(child)) : child);
   }
   return node;

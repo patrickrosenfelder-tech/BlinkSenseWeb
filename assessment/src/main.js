@@ -49,14 +49,15 @@ async function handleConsent(cameraWanted) {
     await tracker.enableCamera(trackingVideo);
     state.cameraEnabled = true;
     showTrackingWidget('Blink tracking active locally', 'live');
-    tracker.start();
-    proceedPastConsent();
   } catch (err) {
     console.error('Camera setup failed', err);
     hideTrackingWidget();
     tracker = disposeCameraTracker(tracker);
     showConsent('Camera access was not enabled. You can retry with the camera or continue without it.');
+    return;
   }
+  proceedPastConsent();
+  if (cameraWanted) tracker.start();
 }
 
 function proceedPastConsent() {
