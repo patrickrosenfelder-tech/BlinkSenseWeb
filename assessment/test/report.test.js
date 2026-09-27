@@ -133,8 +133,8 @@ test('buildReportPayload: redaction contract — a report built from real intake
 });
 
 test('buildReportPayload: redaction contract — acknowledgement names/dates never reach the report; only completion + selected retinal option do', () => {
-  const rawRetinal = { selectedOption: 'iwellness-imaging', name: 'Jane Q. Doe', date: '2026-03-02' };
-  const rawFinancial = { name: 'Jane Q. Doe', date: '2026-03-02', guardianName: 'John R. Doe', guardianDate: '2026-03-02' };
+  const rawRetinal = { selectedOption: 'iwellness-imaging', name: 'Jane Q. Doe', date: '2026-03-02', confirmed: true };
+  const rawFinancial = { name: 'Jane Q. Doe', date: '2026-03-02', guardianName: 'John R. Doe', guardianDate: '2026-03-02', confirmed: true };
 
   const payload = buildReportPayload({
     mode: 'adult',

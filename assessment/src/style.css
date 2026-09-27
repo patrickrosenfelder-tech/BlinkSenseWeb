@@ -1,12 +1,12 @@
 :root {
-  --canvas: #F2F2F7;
-  --card: #FFFFFF;
-  --raised: #E5E5EA;
+  --canvas: #f5f7fa;
+  --card: #ffffff;
+  --raised: #ebeef3;
   --text: #0d1117;
-  --text-secondary: rgba(13, 17, 23, .62);
-  --text-tertiary: rgba(13, 17, 23, .46);
-  --border: rgba(13, 17, 23, .1);
-  --border-strong: rgba(13, 17, 23, .16);
+  --text-secondary: rgba(13, 17, 23, .60);
+  --text-tertiary: rgba(13, 17, 23, .52);
+  --border: rgba(13, 17, 23, .08);
+  --border-strong: rgba(13, 17, 23, .15);
   /* Brand accent — same deep teal-green as the BlinkSense landing page */
   --accent: #0a7c4e;
   --accent-strong: #076640;
@@ -16,29 +16,10 @@
   --cyan: #0284c7;
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .05), 0 1px 1px rgba(0, 0, 0, .04);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, .10), 0 6px 16px rgba(0, 0, 0, .06);
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #0B0B0E;
-    --card: #17171C;
-    --raised: #232329;
-    --text: #F2F2F7;
-    --text-secondary: rgba(242, 242, 247, .68);
-    --text-tertiary: rgba(242, 242, 247, .46);
-    --border: rgba(255, 255, 255, .1);
-    --border-strong: rgba(255, 255, 255, .18);
-    --accent: #34d399;
-    --accent-strong: #2bb583;
-    --accent-light: rgba(52, 211, 153, .14);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
-    --shadow-md: 0 10px 28px rgba(0, 0, 0, .5);
-    --shadow-lg: 0 20px 56px rgba(0, 0, 0, .55), 0 8px 20px rgba(0, 0, 0, .4);
-  }
+  --shadow-sm: 0 1px 3px rgba(13,17,23,.06), 0 1px 2px rgba(13,17,23,.04);
+  --shadow-md: 0 4px 16px rgba(13,17,23,.08), 0 2px 6px rgba(13,17,23,.05);
+  --shadow-lg: 0 16px 48px rgba(13,17,23,.10), 0 6px 16px rgba(13,17,23,.06);
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }

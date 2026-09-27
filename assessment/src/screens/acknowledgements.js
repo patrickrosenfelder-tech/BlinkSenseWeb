@@ -1,93 +1,9 @@
 import { el } from '../ui/dom.js';
-import {
-  RETINAL_OPTIONS,
-  RETINAL_ACK_TEXT,
-  FINANCIAL_ACK_TEXT,
-  FINANCIAL_ACK_POINTS,
-  isRetinalChoiceComplete,
-  isFinancialAckComplete,
-} from '../content/acknowledgements.js';
+import { RETINAL_OPTIONS, RETINAL_DOCUMENT_TITLE, RETINAL_DOCUMENT_SUBTITLE, RETINAL_INTRO, FINANCIAL_DOCUMENT_TITLE, FINANCIAL_INTRO, FINANCIAL_INSURANCE_DISCLAIMER, FINANCIAL_SELF_PAY_DISCLAIMER, FINANCIAL_RESPONSIBILITY_HEADING, FINANCIAL_CLAUSES, FINANCIAL_ACKNOWLEDGEMENT, SIGNATURE_CONFIRMATION, isRetinalChoiceComplete, isFinancialAckComplete } from '../content/acknowledgements.js';
 
-function renderRetinalSection(onChange) {
-  const optionRows = RETINAL_OPTIONS.map((option) =>
-    el('label', { class: 'option-card' }, [
-      el('input', {
-        type: 'radio',
-        name: 'retinal-option',
-        value: option.id,
-        onChange: () => onChange('selectedOption', option.id),
-      }),
-      el('span', {}, [
-        el('div', {}, option.label),
-        el('div', { class: 'fine-print' }, option.description),
-      ]),
-    ])
-  );
-
-  return el('section', { class: 'card', 'aria-labelledby': 'retinal-heading' }, [
-    el('p', { class: 'eyebrow' }, 'Local acknowledgement — not a signature'),
-    el('h2', { id: 'retinal-heading' }, 'Retinal evaluation choice'),
-    el('div', { class: 'option-list' }, optionRows),
-    el('div', { class: 'intake-grid' }, [
-      el('div', { class: 'field' }, [
-        el('label', { for: 'retinal-name', class: 'field-label' }, 'Acknowledgement name'),
-        el('input', { id: 'retinal-name', type: 'text', onInput: (e) => onChange('name', e.target.value) }),
-      ]),
-      el('div', { class: 'field' }, [
-        el('label', { for: 'retinal-date', class: 'field-label' }, 'Date'),
-        el('input', { id: 'retinal-date', type: 'date', onInput: (e) => onChange('date', e.target.value) }),
-      ]),
-    ]),
-    el('p', { class: 'fine-print' }, RETINAL_ACK_TEXT),
-  ]);
+function signatureFields(prefix, onChange, guardian = false) {
+  return [el('div', { class: 'intake-grid' }, [el('div', { class: 'field' }, [el('label', { for: `${prefix}-name`, class: 'field-label' }, guardian ? 'Optional guardian name' : 'Typed name'), el('input', { id: `${prefix}-name`, type: 'text', onInput: (e) => onChange(guardian ? 'guardianName' : 'name', e.target.value) })]), el('div', { class: 'field' }, [el('label', { for: `${prefix}-date`, class: 'field-label' }, guardian ? 'Optional guardian date' : 'Date'), el('input', { id: `${prefix}-date`, type: 'date', onInput: (e) => onChange(guardian ? 'guardianDate' : 'date', e.target.value) })])]), !guardian && el('label', { class: 'consent-check-row' }, [el('input', { type: 'checkbox', onChange: (e) => onChange('confirmed', e.target.checked) }), el('span', {}, SIGNATURE_CONFIRMATION)])];
 }
-
-function renderFinancialSection(onChange) {
-  return el('section', { class: 'card', 'aria-labelledby': 'financial-heading' }, [
-    el('p', { class: 'eyebrow' }, 'Local acknowledgement — not a signature'),
-    el('h2', { id: 'financial-heading' }, 'Financial responsibility'),
-    el('ul', { class: 'consent-list' }, FINANCIAL_ACK_POINTS.map((point) => el('li', {}, point))),
-    el('div', { class: 'intake-grid' }, [
-      el('div', { class: 'field' }, [
-        el('label', { for: 'financial-name', class: 'field-label' }, 'Acknowledgement name'),
-        el('input', { id: 'financial-name', type: 'text', onInput: (e) => onChange('name', e.target.value) }),
-      ]),
-      el('div', { class: 'field' }, [
-        el('label', { for: 'financial-date', class: 'field-label' }, 'Date'),
-        el('input', { id: 'financial-date', type: 'date', onInput: (e) => onChange('date', e.target.value) }),
-      ]),
-      el('div', { class: 'field' }, [
-        el('label', { for: 'financial-guardian-name', class: 'field-label' }, 'Guardian name (optional)'),
-        el('input', { id: 'financial-guardian-name', type: 'text', onInput: (e) => onChange('guardianName', e.target.value) }),
-      ]),
-      el('div', { class: 'field' }, [
-        el('label', { for: 'financial-guardian-date', class: 'field-label' }, 'Guardian date (optional)'),
-        el('input', { id: 'financial-guardian-date', type: 'date', onInput: (e) => onChange('guardianDate', e.target.value) }),
-      ]),
-    ]),
-    el('p', { class: 'fine-print' }, FINANCIAL_ACK_TEXT),
-  ]);
-}
-
-export function renderAcknowledgements(root, { onSubmit }) {
-  const values = { retinal: {}, financial: {} };
-  const continueBtn = el('button', { class: 'button', type: 'button', disabled: true }, 'Continue');
-  continueBtn.addEventListener('click', () => onSubmit(values));
-
-  function refreshContinue() {
-    continueBtn.disabled = !(isRetinalChoiceComplete(values.retinal) && isFinancialAckComplete(values.financial));
-  }
-
-  const retinalSection = renderRetinalSection((id, value) => { values.retinal[id] = value; refreshContinue(); });
-  const financialSection = renderFinancialSection((id, value) => { values.financial[id] = value; refreshContinue(); });
-
-  return el('div', { class: 'screen' }, [
-    el('section', { class: 'card' }, [
-      el('h2', {}, 'Local acknowledgements'),
-      el('p', { class: 'fine-print' }, 'These are local, plain-language acknowledgements only — not legal or electronic signatures. Nothing here files an insurance claim, schedules an appointment, processes payment, diagnoses any condition, or is stored remotely. Only a redacted completion summary — never the names or dates below — is ever included in your downloaded report.'),
-    ]),
-    retinalSection,
-    financialSection,
-    el('section', { class: 'card step-actions' }, [continueBtn]),
-  ]);
-}
+function retinalSection(onChange) { return el('section', { class: 'card' }, [el('p', { class: 'eyebrow' }, 'Local copy — signature required'), el('h2', {}, RETINAL_DOCUMENT_TITLE), el('p', { class: 'fine-print' }, RETINAL_DOCUMENT_SUBTITLE), el('p', {}, RETINAL_INTRO), ...RETINAL_OPTIONS.map((o) => el('label', { class: 'option-card' }, [el('input', { type: 'radio', name: 'retinal-option', value: o.id, onChange: () => onChange('selectedOption', o.id) }), el('span', {}, [el('strong', {}, o.label), el('div', { class: 'fine-print' }, o.description), ...(o.bullets ? [el('ul', {}, o.bullets.map((bullet) => el('li', {}, bullet)))] : []), el('div', { class: 'fine-print' }, o.followup || ''), ...(o.effects ? [el('ul', {}, o.effects.map((effect) => el('li', {}, effect)))] : []), el('div', { class: 'fine-print' }, o.closing || '')])])), ...signatureFields('retinal', onChange)]); }
+function financialSection(onChange) { return el('section', { class: 'card' }, [el('p', { class: 'eyebrow' }, 'Local copy — signature required'), el('h2', {}, FINANCIAL_DOCUMENT_TITLE), el('h3', {}, FINANCIAL_DOCUMENT_TITLE), el('p', {}, FINANCIAL_INTRO), el('p', {}, FINANCIAL_INSURANCE_DISCLAIMER), el('p', {}, FINANCIAL_SELF_PAY_DISCLAIMER), el('p', {}, FINANCIAL_RESPONSIBILITY_HEADING), el('ol', {}, FINANCIAL_CLAUSES.map((c) => el('li', {}, c))), el('p', {}, FINANCIAL_ACKNOWLEDGEMENT), ...signatureFields('financial', onChange), ...signatureFields('financial-guardian', onChange, true)]); }
+export function renderAcknowledgements(root, { onSubmit }) { const values = { retinal: {}, financial: {} }; const button = el('button', { class: 'button', type: 'button', disabled: true }, 'Continue'); button.addEventListener('click', () => onSubmit(values)); const refresh = () => { button.disabled = !(isRetinalChoiceComplete(values.retinal) && isFinancialAckComplete(values.financial)); }; const r = retinalSection((k, v) => { values.retinal[k] = v; refresh(); }); const f = financialSection((k, v) => { values.financial[k] = v; refresh(); }); return el('div', { class: 'screen' }, [el('section', { class: 'card' }, [el('h2', {}, 'Patient agreements'), el('p', { class: 'fine-print' }, 'Complete both supplied agreements. These copies remain on this device only. Nothing is transmitted, submitted, stored remotely, filed as a claim, or used to process payment.')]), r, f, el('section', { class: 'card step-actions' }, [button])]); }

@@ -1,5 +1,6 @@
 import { el } from '../ui/dom.js';
 import { downloadReportJson } from '../report.js';
+import { downloadAgreement, agreementHtml } from '../local-agreements.js';
 
 function statRow(label, value) {
   return el('div', { class: 'result-stat' }, [el('dt', {}, label), el('dd', {}, value)]);
@@ -70,8 +71,11 @@ function renderBlinkSummary(blinkSummary) {
   ]);
 }
 
-export function renderResults(root, { report, onRestart }) {
+export function renderResults(root, { report, acknowledgements, onRestart }) {
   const downloadBtn = el('button', { class: 'button', type: 'button', onClick: () => downloadReportJson(report) }, 'Download JSON report');
+  const retinalBtn = el('button', { class: 'button button-outline', type: 'button', onClick: () => downloadAgreement('retinal', acknowledgements.retinal) }, 'Download retinal agreement');
+  const financialBtn = el('button', { class: 'button button-outline', type: 'button', onClick: () => downloadAgreement('financial', acknowledgements.financial) }, 'Download financial agreement');
+  const printBtn = el('button', { class: 'button button-outline', type: 'button', onClick: () => { const w = window.open('', '_blank'); w.document.write(agreementHtml('retinal', acknowledgements.retinal).replace('</body>', `${agreementHtml('financial', acknowledgements.financial).replace(/^.*?<body>|<\/body>.*$/gs, '')}</body>`)); w.document.close(); w.print(); } }, 'Print/save agreements as PDF');
   const restartBtn = el('button', { class: 'button button-outline', type: 'button', onClick: onRestart }, 'Start a new assessment');
 
   const sections =
@@ -87,6 +91,6 @@ export function renderResults(root, { report, onRestart }) {
       el('div', { class: 'privacy-banner', role: 'note' }, [el('strong', {}, 'Private by design. '), report.privacy]),
     ]),
     ...sections.filter(Boolean),
-    el('section', { class: 'card results-actions' }, [downloadBtn, restartBtn]),
+    el('section', { class: 'card results-actions' }, [downloadBtn, retinalBtn, financialBtn, printBtn, restartBtn]),
   ]);
 }

@@ -1,68 +1,24 @@
-// Local-only content and completion rules for two pre-visit acknowledgement
-// sections (retinal evaluation choice, financial responsibility). Both are
-// plain-language, local acknowledgements of choice/understanding — not legal
-// or electronic signatures — and never file an insurance claim, schedule
-// anything, process payment, diagnose any condition, or get stored remotely.
-// Only a redacted completion summary (never the name/date entered here) is
-// ever included in the downloadable report — see summarizeAcknowledgements.
-
+export const SIGNATURE_CONFIRMATION = 'I intend this typed name as my electronic signature for this local copy.';
+export const RETINAL_DOCUMENT_TITLE = 'New iWellness and Fundus Photo agreement';
+export const RETINAL_DOCUMENT_SUBTITLE = 'iWellness/Fundus or Dilation';
+export const RETINAL_INTRO = 'We are committed to providing high-quality eye care. As part of a comprehensive eye exam, your doctor evaluates the health of the retina each year. This helps screen for eye diseases such as glaucoma, retinal tears, diabetic eye disease, and other conditions that may affect vision and overall health.';
 export const RETINAL_OPTIONS = [
-  {
-    id: 'iwellness-imaging',
-    label: 'iWellness retinal imaging',
-    description: 'A brief, non-invasive photograph of the retina, used as an optional screening aid.',
-  },
-  {
-    id: 'pupil-dilation',
-    label: 'Pupil dilation (included)',
-    description: 'Eye drops widen the pupil for a closer look. Expect temporary blurry vision and light sensitivity for a few hours afterward.',
-  },
-  {
-    id: 'decline-both',
-    label: 'Decline both',
-    description: 'No retinal imaging or pupil dilation will be performed at this visit.',
-  },
+  { id: 'iwellness-imaging', label: 'Option #1', description: 'No eye drops required. This option uses digital imaging to take detailed, high-resolution pictures of the back of the eye. It includes:', bullets: ['A detailed wide-field retinal photograph', 'A scan that evaluates the layers of the retina'], followup: 'These images allow your doctor to document and compare your eye health over time. This test is non-invasive, does not require eye drops, and does not cause changes in vision.' },
+  { id: 'pupil-dilation', label: 'Option #2', description: 'Requires eye drops. This option uses medicated eye drops to temporarily enlarge the pupil. In this option, Dr. Nim will examine the retina directly using a magnifying lens.', followup: 'Dilation is included in your comprehensive eye exam at no additional cost.', effects: ['Blurry near vision for several hours (Typically 6–8 hours)', 'Increased light sensitivity'], closing: 'These effects are temporary and wear off as the drops wear off. In some cases, Doctor may still recommend dilation even if imaging is performed, if needed for medical reasons.' },
+  { id: 'decline-both', label: 'Decline both options', description: 'I would like to decline both options (I understand this may limit the doctor’s ability to fully evaluate my retina)' },
 ];
-
-export const RETINAL_ACK_TEXT =
-  'This is a local, plain-language acknowledgement of your choice — not a legal or electronic signature. It does not file an insurance claim, schedule an appointment, process any payment, diagnose any condition, or get stored remotely.';
-
-export const FINANCIAL_ACK_POINTS = [
-  'Insurance coverage and benefits are determined solely by your insurance company, not by this office.',
-  'You are responsible for any balance, copay, or deductible that your insurance does not cover.',
-  'If you are self-pay, or your insurance has not been verified, payment is due at the time of service.',
-];
-
-export const FINANCIAL_ACK_TEXT =
-  'This is a local, plain-language acknowledgement of financial responsibility — not a legal or electronic signature. It does not file an insurance claim, schedule an appointment, process any payment, diagnose any condition, or get stored remotely.';
-
-function isFilled(value) {
-  return typeof value === 'string' ? value.trim().length > 0 : value != null && value !== '';
-}
-
-function isRealOption(id) {
-  return RETINAL_OPTIONS.some((option) => option.id === id);
-}
-
-export function isRetinalChoiceComplete(values) {
-  const safe = values || {};
-  return isRealOption(safe.selectedOption) && isFilled(safe.name) && isFilled(safe.date);
-}
-
-export function isFinancialAckComplete(values) {
-  const safe = values || {};
-  return isFilled(safe.name) && isFilled(safe.date);
-}
-
-export function summarizeAcknowledgements({ retinal, financial } = {}) {
-  const safeRetinal = retinal || {};
-  return {
-    retinal: {
-      completed: isRetinalChoiceComplete(safeRetinal),
-      selectedOption: isRealOption(safeRetinal.selectedOption) ? safeRetinal.selectedOption : null,
-    },
-    financial: {
-      completed: isFinancialAckComplete(financial),
-    },
-  };
-}
+export const FINANCIAL_DOCUMENT_TITLE = 'Patient Financial Responsibility Agreement';
+export const FINANCIAL_INTRO = 'Thank you for choosing Precision Vision Institute for your healthcare needs. We are committed to providing you with the highest quality care. Please read and sign this Patient Financial Responsibility Agreement, which outlines your financial responsibilities regarding services rendered and insurance coverage.';
+export const FINANCIAL_INSURANCE_DISCLAIMER = 'While we will file claims on your behalf with your insurance provider, it is important to understand that your insurance policy is a contract between you and your insurance company. As such, any determination of coverage, benefits, and payment for services rendered is ultimately made by your insurance provider.';
+export const FINANCIAL_SELF_PAY_DISCLAIMER = 'Patients understand that the quoted price must be paid at the end of service. If services include Scleral/Hybrid/CRT lenses and/or fittings, the patient can pay half of the amount at the end of the contact lens evaluation and the remaining amount during the follow-up appointment.';
+export const FINANCIAL_RESPONSIBILITY_HEADING = 'Patient Responsibility: By signing this waiver, you acknowledge and agree to the following:';
+export const FINANCIAL_CLAUSES = ['Financial Responsibility: You are responsible for the payment of any and all charges for services provided to you by Precision Vision Institute that are not covered or only partially covered by your insurance plan. This includes, but is not limited to, deductibles, co-pays, co-insurance, and any non-covered services.', 'Service Authorization: You are responsible for verifying the details of your insurance coverage, including any pre-authorization requirements for specific services or procedures. Precision Vision Institute is not liable for any services rendered that are denied coverage by your insurance provider.', 'Payment Terms: Payment for any outstanding balance is due upon receipt of your statement.'];
+export const FINANCIAL_ACKNOWLEDGEMENT = 'By signing below, you acknowledge that you have read and understood this Patient Financial Responsibility Waiver and agree to the outlined terms:';
+export const FINANCIAL_ACK_POINTS = [FINANCIAL_INSURANCE_DISCLAIMER, FINANCIAL_SELF_PAY_DISCLAIMER, ...FINANCIAL_CLAUSES];
+function isFilled(value) { return typeof value === 'string' ? value.trim().length > 0 : value != null && value !== ''; }
+function isRealOption(id) { return RETINAL_OPTIONS.some((option) => option.id === id); }
+export function isRetinalChoiceComplete(values = {}) { return isRealOption(values.selectedOption) && isFilled(values.name) && isFilled(values.date) && values.confirmed === true; }
+export function isFinancialAckComplete(values = {}) { return isFilled(values.name) && isFilled(values.date) && values.confirmed === true; }
+export function summarizeAcknowledgements({ retinal, financial } = {}) { const r = retinal || {}; return { retinal: { completed: isRetinalChoiceComplete(r), selectedOption: isRealOption(r.selectedOption) ? r.selectedOption : null }, financial: { completed: isFinancialAckComplete(financial || {}) } }; }
+export const RETINAL_ACK_TEXT = `LOCAL COPY ONLY. ${SIGNATURE_CONFIRMATION}`;
+export const FINANCIAL_ACK_TEXT = `LOCAL COPY ONLY. ${SIGNATURE_CONFIRMATION}`;

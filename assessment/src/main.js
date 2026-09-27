@@ -162,7 +162,7 @@ function finish() {
     acknowledgementsSummary: summarizeAcknowledgements(state.acknowledgements),
   });
 
-  mount(root, renderResults(root, { report, onRestart }));
+  mount(root, renderResults(root, { report, acknowledgements: state.acknowledgements, onRestart }));
 }
 
 function onRestart() {
