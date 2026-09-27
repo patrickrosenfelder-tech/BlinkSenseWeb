@@ -5,14 +5,16 @@ import { BlinkTracker } from './blink/tracker.js';
 import { disposeCameraTracker } from './blink/lifecycle.js';
 import { renderWelcome } from './screens/welcome.js';
 import { renderConsent } from './screens/consent.js';
-import { renderProfile } from './screens/profile.js';
+import { renderAcknowledgements } from './screens/acknowledgements.js';
+import { renderIntake } from './screens/intake.js';
 import { renderReading } from './screens/reading.js';
 import { renderAcuityStep, renderContrastStep, renderColorStep } from './screens/vision.js';
 import { renderAgeChoice, renderKidsTask } from './screens/kids.js';
 import { renderResults } from './screens/results.js';
 import { scoreReading } from './content/reading.js';
 import { scoreKidsTask } from './content/kids.js';
-import { formatProfileAnswers } from './content/profile-questions.js';
+import { summarizeIntake } from './content/intake-fields.js';
+import { summarizeAcknowledgements } from './content/acknowledgements.js';
 import { computeBlinkSummary, buildVisionResults } from './scoring.js';
 import { buildReportPayload } from './report.js';
 
@@ -46,7 +48,7 @@ async function handleConsent(cameraWanted) {
   try {
     await tracker.enableCamera(trackingVideo);
     state.cameraEnabled = true;
-    showTrackingWidget('Tracking blinks…', 'live');
+    showTrackingWidget('Blink tracking active locally', 'live');
     tracker.start();
     proceedPastConsent();
   } catch (err) {
@@ -61,11 +63,20 @@ async function handleConsent(cameraWanted) {
 }
 
 function proceedPastConsent() {
-  if (state.mode === 'adult') {
-    showProfile();
-  } else {
-    showAgeChoice();
-  }
+  showAcknowledgements();
+}
+
+function showAcknowledgements() {
+  mount(root, renderAcknowledgements(root, {
+    onSubmit: (values) => {
+      state.acknowledgements = values;
+      if (state.mode === 'adult') {
+        showIntake();
+      } else {
+        showAgeChoice();
+      }
+    },
+  }));
 }
 
 function showWelcome() {
@@ -79,9 +90,9 @@ function showConsent() {
   mount(root, renderConsent(root, { onContinue: handleConsent }));
 }
 
-function showProfile() {
-  mount(root, renderProfile(root, {
-    onSubmit: (answers) => { state.profileAnswers = answers; showReading(); },
+function showIntake() {
+  mount(root, renderIntake(root, {
+    onSubmit: (values) => { state.intake = values; showReading(); },
   }));
 }
 
@@ -141,13 +152,14 @@ function finish() {
   const report = buildReportPayload({
     mode,
     generatedAt,
-    profileAnswers: state.mode === 'adult' ? formatProfileAnswers(state.profileAnswers) : null,
+    intakeSummary: state.mode === 'adult' ? summarizeIntake(state.intake) : null,
     readingResult: state.mode === 'adult' ? scoreReading(state.readingAnswers) : null,
     kidsResult: state.mode === 'kids' ? scoreKidsTask(state.ageBand, state.kidsResponses) : null,
     visionResults: state.mode === 'adult'
       ? buildVisionResults({ acuityFlags: state.acuityFlags, contrastFlags: state.contrastFlags, colorAnswers: state.colorAnswers })
       : null,
     blinkSummary,
+    acknowledgementsSummary: summarizeAcknowledgements(state.acknowledgements),
   });
 
   mount(root, renderResults(root, { report, onRestart }));

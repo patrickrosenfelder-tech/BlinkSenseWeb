@@ -22,9 +22,14 @@ rate locally; you can decline it entirely and still complete every task.
 
 - **Consent-first flow** — a clear explanation of what the camera is (and
   isn't) used for, with an explicit opt-out that skips blink tracking.
-- **Adult flow** — three local profile questions, a timed reading-comprehension
-  passage, and three self-report vision checks (letter size / acuity,
-  contrast, and a simplified, non-diagnostic color-response check).
+- **Adult flow** — a local, privacy-first "new appointment" intake form
+  (identity, address, gender/contact, appointment, and insurance fields —
+  Social Security Numbers are deliberately never collected), a timed
+  reading-comprehension passage, and three self-report vision checks (letter
+  size / acuity, contrast, and a simplified, non-diagnostic color-response
+  check). Entered intake values never leave this browser tab and are not
+  included in the results screen or downloaded report — only a redacted
+  completion summary (fields completed / required-fields-complete) is.
 - **Kids flow** — an age choice (6–9 or 10–13) followed by a single
   age-adjusted story-and-picture task combining a short reading passage with
   vision-friendly letter-matching and color rounds.
@@ -93,8 +98,8 @@ npm run preview
 assessment/
   src/
     blink/            on-device blink detector, state machine, BPM math, camera wrapper
-    content/          reading passage, vision-check data, kids age-band content, profile questions
-    screens/          one render function per screen (welcome, consent, profile, reading, vision, kids, results)
+    content/          reading passage, vision-check data, kids age-band content, intake form field schema
+    screens/          one render function per screen (welcome, consent, intake, reading, vision, kids, results)
     scoring.js        combines blink stats + vision results
     report.js         builds/serializes the downloadable JSON report
     state.js          initial session state shape

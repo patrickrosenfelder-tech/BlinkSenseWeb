@@ -9,6 +9,9 @@
   <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0B0B0E" media="(prefers-color-scheme: dark)" />
   <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" />
 </head>
 <body>
   <a class="skip-link" href="#app-root">Skip to content</a>
@@ -25,13 +28,14 @@
 
   <div id="tracking-widget" class="tracking-widget shell" hidden>
     <div class="tracking-inner">
-      <video id="tracking-video" class="tracking-video" autoplay muted playsinline aria-label="Mirrored live camera preview, used only for local blink tracking"></video>
       <div class="tracking-info">
         <span id="tracking-status" class="status-pill" role="status" aria-live="polite">Camera off</span>
-        <span class="tracking-caption">Blink tracking — processed on this device only</span>
+        <span class="tracking-caption">Blink tracking is active locally on this device</span>
       </div>
     </div>
   </div>
+
+  <video id="tracking-video" class="tracking-video-processing" autoplay muted playsinline aria-hidden="true" tabindex="-1"></video>
 
   <main id="app-root" class="shell app-main" tabindex="-1" aria-live="polite"></main>
 

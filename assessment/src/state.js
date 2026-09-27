@@ -3,7 +3,8 @@ export function createInitialState() {
     mode: null, // 'adult' | 'kids'
     ageBand: null, // '6-9' | '10-13' (kids only)
     cameraEnabled: false,
-    profileAnswers: {},
+    intake: {},
+    acknowledgements: { retinal: {}, financial: {} },
     readingAnswers: {},
     acuityFlags: [],
     contrastFlags: [],

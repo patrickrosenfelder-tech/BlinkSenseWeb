@@ -5,11 +5,15 @@ function statRow(label, value) {
   return el('div', { class: 'result-stat' }, [el('dt', {}, label), el('dd', {}, value)]);
 }
 
-function renderProfileSummary(profileAnswers) {
-  if (!profileAnswers) return null;
-  return el('section', { class: 'card', 'aria-labelledby': 'profile-summary-heading' }, [
-    el('h3', { id: 'profile-summary-heading' }, 'Your answers'),
-    el('dl', { class: 'result-stats' }, profileAnswers.map((a) => statRow(a.prompt, a.answer ?? 'Not answered'))),
+function renderIntakeSummary(intakeSummary) {
+  if (!intakeSummary) return null;
+  return el('section', { class: 'card', 'aria-labelledby': 'intake-summary-heading' }, [
+    el('h3', { id: 'intake-summary-heading' }, 'Intake form'),
+    el('p', { class: 'fine-print' }, 'The names, dates, contact details, and insurance information you entered stay on this device — they are not shown here or included in the downloaded report, only this completion summary is.'),
+    el('dl', { class: 'result-stats' }, [
+      statRow('Fields completed', `${intakeSummary.completedFields} / ${intakeSummary.totalFields}`),
+      statRow('Required fields', intakeSummary.requiredComplete ? 'Complete' : 'Incomplete'),
+    ]),
   ]);
 }
 
@@ -72,7 +76,7 @@ export function renderResults(root, { report, onRestart }) {
 
   const sections =
     report.mode === 'adult'
-      ? [renderProfileSummary(report.profileAnswers), renderReadingSummary(report.readingResult), renderVisionSummary(report.visionResults)]
+      ? [renderIntakeSummary(report.intakeSummary), renderReadingSummary(report.readingResult), renderVisionSummary(report.visionResults)]
       : [renderKidsSummary(report.kidsResult)];
   sections.push(renderBlinkSummary(report.blinkSummary));
 

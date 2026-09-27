@@ -2,6 +2,8 @@
 // buildReportPayload/reportToJson are pure and never touch the network;
 // downloadReportJson only ever writes a local Blob download.
 
+import { summarizeAcknowledgements } from './content/acknowledgements.js';
+
 export const REPORT_VERSION = 1;
 
 const DISCLAIMER =
@@ -17,11 +19,12 @@ const PRIVACY_NOTE =
 export function buildReportPayload({
   mode,
   generatedAt,
-  profileAnswers = null,
+  intakeSummary = null,
   readingResult = null,
   kidsResult = null,
   visionResults = null,
   blinkSummary,
+  acknowledgementsSummary = summarizeAcknowledgements(),
 }) {
   return {
     version: REPORT_VERSION,
@@ -29,11 +32,12 @@ export function buildReportPayload({
     mode,
     disclaimer: DISCLAIMER,
     privacy: PRIVACY_NOTE,
-    profileAnswers,
+    intakeSummary,
     readingResult,
     kidsResult,
     visionResults,
     blinkSummary,
+    acknowledgements: acknowledgementsSummary,
   };
 }
 
