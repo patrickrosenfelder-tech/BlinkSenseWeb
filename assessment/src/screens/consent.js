@@ -1,10 +1,18 @@
 import { el } from '../ui/dom.js';
 
+export function getConsentActionPolicy(acknowledged) {
+  return {
+    canContinueWithoutCamera: true,
+    canContinueWithCamera: acknowledged,
+  };
+}
+
 export function renderConsent(root, { onContinue, cameraError }) {
   let acknowledged = false;
 
-  const continueWithCameraBtn = el('button', { class: 'button', type: 'button', disabled: true }, 'Enable camera & continue');
-  const continueWithoutBtn = el('button', { class: 'button button-outline', type: 'button', disabled: true }, 'Continue without camera');
+  const actionPolicy = getConsentActionPolicy(acknowledged);
+  const continueWithCameraBtn = el('button', { class: 'button', type: 'button', disabled: !actionPolicy.canContinueWithCamera }, 'Enable camera & continue');
+  const continueWithoutBtn = el('button', { class: 'button button-outline', type: 'button', disabled: !actionPolicy.canContinueWithoutCamera }, 'Continue without camera');
 
   continueWithCameraBtn.addEventListener('click', () => onContinue(true));
   continueWithoutBtn.addEventListener('click', () => onContinue(false));
@@ -14,8 +22,9 @@ export function renderConsent(root, { onContinue, cameraError }) {
     id: 'consent-check',
     onChange: (e) => {
       acknowledged = e.target.checked;
-      continueWithCameraBtn.disabled = !acknowledged;
-      continueWithoutBtn.disabled = !acknowledged;
+      const nextPolicy = getConsentActionPolicy(acknowledged);
+      continueWithCameraBtn.disabled = !nextPolicy.canContinueWithCamera;
+      continueWithoutBtn.disabled = !nextPolicy.canContinueWithoutCamera;
     },
   });
 
