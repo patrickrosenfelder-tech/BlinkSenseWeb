@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BlinkSense Assessment — Reading, Vision &amp; Blink Screening</title>
+  <meta name="description" content="A privacy-first, on-device screening: a short reading task, lightweight vision checks, and blink-rate tracking. Camera video, landmarks, answers, and blink metrics stay on your device — only this app's code and its face-tracking model are downloaded from hosting CDNs." />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0B0B0E" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <a class="skip-link" href="#app-root">Skip to content</a>
+
+  <header class="app-header">
+    <div class="shell app-header-inner">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 12C2 12 6 5 12 5C18 5 22 12 22 12C22 12 18 19 12 19C6 19 2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
+        Blink<span>Sense</span> Assessment
+      </span>
+      <span class="app-header-tag">Screening only</span>
+    </div>
+  </header>
+
+  <div id="tracking-widget" class="tracking-widget shell" hidden>
+    <div class="tracking-inner">
+      <video id="tracking-video" class="tracking-video" autoplay muted playsinline aria-label="Mirrored live camera preview, used only for local blink tracking"></video>
+      <div class="tracking-info">
+        <span id="tracking-status" class="status-pill" role="status" aria-live="polite">Camera off</span>
+        <span class="tracking-caption">Blink tracking — processed on this device only</span>
+      </div>
+    </div>
+  </div>
+
+  <main id="app-root" class="shell app-main" tabindex="-1" aria-live="polite"></main>
+
+  <footer class="app-footer">
+    <p class="shell fine-print">BlinkSense Assessment — 100% on-device. Screening only, not medical advice. Your video, landmarks, answers, and blink metrics stay local and are not uploaded; CDN assets and models may be downloaded as disclosed above.</p>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
