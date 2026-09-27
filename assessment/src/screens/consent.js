@@ -7,6 +7,10 @@ export function getConsentActionPolicy(acknowledged) {
   };
 }
 
+export function continueWithoutCameraAfterDenial(onContinue) {
+  onContinue(false);
+}
+
 export function renderConsent(root, { onContinue, cameraError }) {
   let acknowledged = false;
 
