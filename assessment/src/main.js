@@ -4,7 +4,7 @@ import { createInitialState } from './state.js';
 import { BlinkTracker } from './blink/tracker.js';
 import { disposeCameraTracker } from './blink/lifecycle.js';
 import { renderWelcome } from './screens/welcome.js';
-import { continueWithoutCameraAfterDenial, renderConsent } from './screens/consent.js';
+import { renderConsent } from './screens/consent.js';
 import { renderAcknowledgements } from './screens/acknowledgements.js';
 import { renderIntake } from './screens/intake.js';
 import { renderReading } from './screens/reading.js';
@@ -55,7 +55,7 @@ async function handleConsent(cameraWanted) {
     console.error('Camera setup failed', err);
     hideTrackingWidget();
     tracker = disposeCameraTracker(tracker);
-    continueWithoutCameraAfterDenial(handleConsent);
+    showConsent('Camera access was not enabled. You can retry with the camera or continue without it.');
   }
 }
 
@@ -83,8 +83,8 @@ function showWelcome() {
   }));
 }
 
-function showConsent() {
-  mount(root, renderConsent(root, { onContinue: handleConsent }));
+function showConsent(cameraError) {
+  mount(root, renderConsent(root, { onContinue: handleConsent, cameraError }));
 }
 
 function showIntake() {

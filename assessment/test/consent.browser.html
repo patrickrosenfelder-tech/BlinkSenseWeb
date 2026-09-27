@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Consent browser regression harness</title>
+<div id="root"></div>
+<script type="module">
+  import { renderConsent } from '../src/screens/consent.js';
+
+  const root = document.querySelector('#root');
+  let calls = 0;
+  let value;
+  root.append(renderConsent(root, {
+    onContinue: (cameraWanted) => {
+      calls += 1;
+      value = cameraWanted;
+    },
+  }));
+
+  const checkbox = root.querySelector('#consent-check');
+  checkbox.click();
+  const button = [...root.querySelectorAll('button')]
+    .find((candidate) => candidate.textContent === 'Continue without camera');
+  if (button.disabled) throw new Error('No-camera action must be enabled after consent is checked');
+  button.click();
+
+  if (calls !== 1 || value !== false) {
+    throw new Error(`Expected onContinue(false) exactly once; got ${calls} call(s) with ${value}`);
+  }
+  document.body.dataset.testResult = 'pass';
+  document.body.insertAdjacentHTML('beforeend', '<p>PASS: no-camera click continued exactly once.</p>');
+</script>

@@ -7,19 +7,23 @@ export function getConsentActionPolicy(acknowledged) {
   };
 }
 
-export function continueWithoutCameraAfterDenial(onContinue) {
-  onContinue(false);
-}
-
 export function renderConsent(root, { onContinue, cameraError }) {
   let acknowledged = false;
+  let noCameraActivationInProgress = false;
 
   const actionPolicy = getConsentActionPolicy(acknowledged);
   const continueWithCameraBtn = el('button', { class: 'button', type: 'button', disabled: !actionPolicy.canContinueWithCamera }, 'Enable camera & continue');
   const continueWithoutBtn = el('button', { class: 'button button-outline', type: 'button', disabled: !actionPolicy.canContinueWithoutCamera }, 'Continue without camera');
 
   continueWithCameraBtn.addEventListener('click', () => onContinue(true));
-  continueWithoutBtn.addEventListener('click', () => onContinue(false));
+  const activateWithoutCamera = () => {
+    if (noCameraActivationInProgress) return;
+    noCameraActivationInProgress = true;
+    onContinue(false);
+    setTimeout(() => { noCameraActivationInProgress = false; }, 0);
+  };
+  continueWithoutBtn.addEventListener('pointerup', activateWithoutCamera);
+  continueWithoutBtn.addEventListener('click', activateWithoutCamera);
 
   const checkbox = el('input', {
     type: 'checkbox',
