@@ -1,6 +1,7 @@
-import { el } from '../ui/dom.js';
+import { el, svgEl } from '../ui/dom.js';
 import { downloadReportJson } from '../report.js';
 import { downloadAgreement, agreementHtml } from '../local-agreements.js';
+import { buildLineChartGeometry, describeBlinkChart } from '../blink/chart-geometry.js';
 
 function statRow(label, value) {
   return el('div', { class: 'result-stat' }, [el('dt', {}, label), el('dd', {}, value)]);
@@ -51,6 +52,38 @@ function renderKidsSummary(kidsResult) {
   ]);
 }
 
+function renderBlinkChart(blinkSummary) {
+  const geometry = buildLineChartGeometry(blinkSummary.series);
+  if (!geometry) return null;
+
+  const description = describeBlinkChart({
+    series: blinkSummary.series,
+    sessionAverageBpm: blinkSummary.avgBpm,
+    peakBpm: blinkSummary.peakBpm,
+    activeDurationMs: blinkSummary.activeDurationMs,
+  });
+  const title = 'Blink rate over time';
+  const chartChildren = [
+    svgEl('title', {}, title),
+    svgEl('desc', {}, description),
+    svgEl('line', { x1: geometry.paddingX, y1: geometry.height - geometry.paddingY, x2: geometry.width - geometry.paddingX, y2: geometry.height - geometry.paddingY, class: 'blink-chart-axis' }),
+    geometry.isSinglePoint
+      ? svgEl('circle', { cx: geometry.points[0].x, cy: geometry.points[0].y, r: 4, class: 'blink-chart-line' })
+      : svgEl('polyline', { points: geometry.pointsAttr, fill: 'none', class: 'blink-chart-line' }),
+  ];
+  return el('div', { class: 'blink-chart-wrap' }, [
+    el('h4', {}, title),
+    svgEl('svg', {
+      class: 'blink-chart',
+      viewBox: `0 0 ${geometry.width} ${geometry.height}`,
+      role: 'img',
+      'aria-label': description,
+      preserveAspectRatio: 'none',
+    }, chartChildren),
+    el('p', { class: 'fine-print' }, 'Rolling BPM over active tracking time.'),
+  ]);
+}
+
 const BLINK_UNAVAILABLE_MESSAGES = {
   'camera-denied': 'Blink data is not available for this session because the camera was not enabled.',
   'no-usable-frames': 'Blink data is not available for this session because no usable camera frames were captured.',
@@ -61,13 +94,18 @@ function renderBlinkSummary(blinkSummary) {
   const unavailableText = BLINK_UNAVAILABLE_MESSAGES[blinkSummary.reason] ?? 'Blink data is not available for this session.';
   return el('section', { class: 'card', 'aria-labelledby': 'blink-summary-heading' }, [
     el('h3', { id: 'blink-summary-heading' }, 'Blink tracking'),
-    blinkSummary.available
-      ? el('dl', { class: 'result-stats' }, [
-          statRow('Total blinks', String(blinkSummary.blinkCount)),
-          statRow('Average rate', `${Math.round(blinkSummary.avgBpm)} blinks / min`),
-          statRow('Active tracking time', `${Math.round(blinkSummary.activeDurationMs / 1000)}s`),
-        ])
-      : el('p', { class: 'fine-print' }, unavailableText),
+    ...(blinkSummary.available
+      ? [
+          renderBlinkChart(blinkSummary),
+          el('dl', { class: 'result-stats' }, [
+            statRow('Total blinks', String(blinkSummary.blinkCount)),
+            statRow('Session average BPM', `${Math.round(blinkSummary.avgBpm)} blinks / min`),
+            statRow('Final rolling BPM', `${Math.round(blinkSummary.finalRollingBpm)} blinks / min`),
+            statRow('Peak rolling BPM', `${Math.round(blinkSummary.peakBpm)} blinks / min`),
+            statRow('Active tracking time', `${Math.round(blinkSummary.activeDurationMs / 1000)}s`),
+          ]),
+        ]
+      : [el('p', { class: 'fine-print' }, unavailableText)]),
   ]);
 }
 

@@ -5,6 +5,7 @@ import {
   computeActiveDurationMs,
   computeSessionAverageBpm,
   computeLiveBpm,
+  effectiveWindowMs,
 } from '../src/blink/bpm-math.js';
 
 // Fixed synthetic timestamps (ms), as if from performance.now().
@@ -59,4 +60,16 @@ test('computeLiveBpm: ramp-up window uses active elapsed time', () => {
 test('computeLiveBpm: caps the window at windowCapMs', () => {
   const bpm = computeLiveBpm(6, 5 * 60_000, 60_000);
   assert.equal(bpm, 6);
+});
+
+test('effectiveWindowMs: ramps up to a 1s floor before the floor is reached', () => {
+  assert.equal(effectiveWindowMs(500, 60_000), 1000);
+});
+
+test('effectiveWindowMs: tracks elapsed time between the floor and the cap', () => {
+  assert.equal(effectiveWindowMs(30_000, 60_000), 30_000);
+});
+
+test('effectiveWindowMs: caps at windowCapMs once elapsed time exceeds it', () => {
+  assert.equal(effectiveWindowMs(90_000, 60_000), 60_000);
 });

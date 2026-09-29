@@ -4,13 +4,20 @@ import { computeActiveDurationMs } from './bpm-math.js';
 /**
  * Wraps camera acquisition + the on-device blink detector behind a small
  * start/stop lifecycle for the assessment flow. Nothing here ever leaves the
- * device: only a running blink count and elapsed active-tracking time are
- * read back out via stop().
+ * device: only a running blink count, elapsed active-tracking time, and the
+ * active-elapsed timestamp of each accepted blink (scalar timing only — never
+ * frames or landmarks) are read back out via stop(), to drive the results chart.
  */
 export class BlinkTracker {
   constructor() {
-    this.detector = new BlinkDetector({ onBlink: () => { this.blinkCount += 1; } });
+    this.detector = new BlinkDetector({
+      onBlink: () => {
+        this.blinkCount += 1;
+        this.blinkTimestampsMs.push(this.currentActiveElapsedMs());
+      },
+    });
     this.blinkCount = 0;
+    this.blinkTimestampsMs = [];
     this.stream = null;
     this.video = null;
     this.modelReady = false;
@@ -49,6 +56,7 @@ export class BlinkTracker {
     this.running = true;
     this.detector.resetSession();
     this.blinkCount = 0;
+    this.blinkTimestampsMs = [];
     this.startedAtMs = performance.now();
     this.accumulatedPauseMs = 0;
     this.hiddenSinceMs = document.hidden ? this.startedAtMs : null;
@@ -59,6 +67,11 @@ export class BlinkTracker {
       this.detector.detectFrame(this.video, timestampMs);
     };
     this.rafId = requestAnimationFrame(tick);
+  }
+
+  /** Active (hidden-tab-excluded) ms elapsed right now — always called from a not-hidden context. */
+  currentActiveElapsedMs() {
+    return computeActiveDurationMs(this.startedAtMs, performance.now(), this.accumulatedPauseMs, this.hiddenSinceMs);
   }
 
   /**

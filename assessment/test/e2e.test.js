@@ -164,3 +164,53 @@ test('intake Continue and reading Submit answers progress the later flow by keyb
     await context.close();
   });
 });
+
+test('results rendering shows an accessible blink chart and separates rolling metrics', async () => {
+  await withApp(async ({ url, browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(url);
+    await page.evaluate(async () => {
+      const { renderResults } = await import('/src/screens/results.js');
+      const report = {
+        mode: 'kids-6-9',
+        disclaimer: 'Screening only.',
+        privacy: 'Private by design.',
+        kidsResult: { correct: 1, total: 1, percent: 100 },
+        blinkSummary: {
+          available: true,
+          blinkCount: 3,
+          activeDurationMs: 120000,
+          avgBpm: 1.5,
+          finalRollingBpm: 2,
+          peakBpm: 4,
+          series: [{ tMs: 5000, bpm: 0 }, { tMs: 120000, bpm: 2 }],
+        },
+      };
+      document.querySelector('#app-root').replaceChildren(renderResults(document.querySelector('#app-root'), {
+        report,
+        acknowledgements: { retinal: {}, financial: {} },
+        onRestart: () => {},
+      }));
+    });
+    assert.equal(await page.locator('svg.blink-chart').count(), 1);
+    assert.match(await page.locator('svg.blink-chart').getAttribute('aria-label'), /Blink rate over/);
+    assert.equal(await page.locator('.result-stat dt').allTextContents().then((v) => v.includes('Session average BPM')), true);
+    assert.equal(await page.locator('.result-stat dt').allTextContents().then((v) => v.includes('Final rolling BPM')), true);
+    assert.equal(await page.locator('.result-stat dt').allTextContents().then((v) => v.includes('Peak rolling BPM')), true);
+
+    await page.evaluate(async () => {
+      const { renderResults } = await import('/src/screens/results.js');
+      document.querySelector('#app-root').replaceChildren(renderResults(document.querySelector('#app-root'), {
+        report: {
+          mode: 'kids-6-9', disclaimer: '', privacy: '', kidsResult: null,
+          blinkSummary: { available: false, reason: 'camera-denied', series: [] },
+        },
+        acknowledgements: { retinal: {}, financial: {} }, onRestart: () => {},
+      }));
+    });
+    assert.equal(await page.locator('svg.blink-chart').count(), 0);
+    assert.match(await page.locator('#blink-summary-heading').locator('..').textContent(), /camera was not enabled/);
+    await context.close();
+  });
+});

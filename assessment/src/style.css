@@ -179,6 +179,12 @@ h1, h2, h3, p, ul, dl { margin-top: 0; }
 .result-stat dt { color: var(--text-tertiary); flex-shrink: 0; }
 .result-stat dd { margin: 0; text-align: right; font-weight: 600; }
 .results-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.blink-chart-wrap { margin: 14px 0 18px; }
+.blink-chart-wrap h4 { margin: 0 0 8px; font-size: 14px; }
+.blink-chart { display: block; width: 100%; height: 180px; overflow: visible; background: var(--raised); border-radius: 12px; }
+.blink-chart-axis { stroke: var(--border-strong); stroke-width: 1; }
+.blink-chart-line { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.blink-chart circle { fill: var(--accent); }
 
 .fine-print { color: var(--text-tertiary); font-size: 12px; margin: 8px 0 0; line-height: 1.5; }
 

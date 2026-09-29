@@ -142,6 +142,7 @@ function finish() {
       processedFrameCount: blinkStats?.processedFrameCount ?? 0,
       faceDetectedFrameCount: blinkStats?.faceDetectedFrameCount ?? 0,
     },
+    blinkStats?.blinkTimestampsMs ?? [],
   );
 
   const mode = state.mode === 'adult' ? 'adult' : `kids-${state.ageBand}`;

@@ -49,6 +49,19 @@ export function computeSessionAverageBpm(blinkCount, activeDurationMs) {
 }
 
 /**
+ * The rolling window actually used at a given point in the session: ramps up
+ * from a 1s floor (so an early sample isn't divided by an implausibly tiny
+ * window) to `windowCapMs`, then holds steady.
+ *
+ * @param {number} activeElapsedMs - active (hidden-tab-excluded) time elapsed since session start.
+ * @param {number} windowCapMs - the rolling window size, e.g. 60000 for "last 60s".
+ * @returns {number}
+ */
+export function effectiveWindowMs(activeElapsedMs, windowCapMs) {
+  return Math.min(windowCapMs, Math.max(activeElapsedMs, 1000));
+}
+
+/**
  * Live BPM: rate over the rolling last-`windowCapMs` window (default 60s),
  * ramping up using active elapsed time (not raw wall-clock time) for the
  * first window so an early hidden span doesn't deflate the reading.
@@ -59,6 +72,6 @@ export function computeSessionAverageBpm(blinkCount, activeDurationMs) {
  * @returns {number} live blinks-per-minute rate.
  */
 export function computeLiveBpm(blinksInWindow, activeElapsedMs, windowCapMs) {
-  const windowMs = Math.min(windowCapMs, Math.max(activeElapsedMs, 1000));
+  const windowMs = effectiveWindowMs(activeElapsedMs, windowCapMs);
   return (blinksInWindow / windowMs) * 60000;
 }

@@ -65,6 +65,49 @@ test('computeBlinkSummary: unavailable (no face detected) even with processed fr
   assert.equal(summary.reason, 'no-face-detected');
 });
 
+test('computeBlinkSummary: a healthy session includes a chart series, peak rate, and a final rolling rate distinct from the session average', () => {
+  const blinkTimestampsMs = [10_000, 20_000, 70_000];
+  const summary = computeBlinkSummary(
+    3,
+    120_000,
+    { cameraDenied: false, processedFrameCount: 3600, faceDetectedFrameCount: 3500 },
+    blinkTimestampsMs,
+  );
+  assert.equal(summary.available, true);
+  assert.ok(Array.isArray(summary.series));
+  assert.ok(summary.series.length > 0);
+  assert.equal(summary.series[summary.series.length - 1].tMs, 120_000);
+  assert.ok(summary.peakBpm >= 0);
+  assert.equal(summary.finalRollingBpm, summary.series[summary.series.length - 1].bpm);
+});
+
+test('computeBlinkSummary: unavailable sessions report an empty series and zeroed peak/final rate, never an invented chart', () => {
+  const summary = computeBlinkSummary(
+    0,
+    45_000,
+    { cameraDenied: false, processedFrameCount: 0, faceDetectedFrameCount: 0 },
+    [1000, 2000],
+  );
+  assert.equal(summary.available, false);
+  assert.deepEqual(summary.series, []);
+  assert.equal(summary.peakBpm, 0);
+  assert.equal(summary.finalRollingBpm, 0);
+});
+
+test('computeBlinkSummary: a zero-blink but healthy short session yields a flat, honest series rather than an empty one', () => {
+  const summary = computeBlinkSummary(0, 3000, { cameraDenied: false, processedFrameCount: 90, faceDetectedFrameCount: 90 }, []);
+  assert.equal(summary.available, true);
+  assert.equal(summary.series.length, 1);
+  assert.equal(summary.series[0].bpm, 0);
+  assert.equal(summary.peakBpm, 0);
+  assert.equal(summary.avgBpm, 0);
+});
+
+test('computeBlinkSummary: blinkTimestampsMs defaults to empty so existing 3-arg callers keep working', () => {
+  const summary = computeBlinkSummary(0, 3000, { cameraDenied: false, processedFrameCount: 100, faceDetectedFrameCount: 100 });
+  assert.deepEqual(summary.series, [{ tMs: 3000, bpm: 0 }]);
+});
+
 test('buildVisionResults: composes acuity, contrast, and color results deterministically', () => {
   const acuityFlags = ACUITY_LEVELS.map(() => true);
   const contrastFlags = CONTRAST_LEVELS.map(() => true);
