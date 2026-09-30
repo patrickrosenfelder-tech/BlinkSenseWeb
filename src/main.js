@@ -20,28 +20,131 @@ primaryNav.querySelectorAll('a').forEach((link) =>
   })
 );
 
-// ── Toast ─────────────────────────────────────────────────────
-const toast      = document.querySelector('.toast');
-const toastClose = document.querySelector('.toast-close');
-let toastTimer;
+// ── Early-access modal ────────────────────────────────────────
+const backdrop    = document.getElementById('ea-backdrop');
+const modal       = document.getElementById('ea-modal');
+const form        = document.getElementById('ea-form');
+const emailInput  = document.getElementById('ea-email');
+const errorEl     = document.getElementById('ea-email-error');
+const submitBtn   = form.querySelector('.ea-submit');
+const submitLabel = submitBtn.querySelector('.ea-submit-label');
+const spinner     = submitBtn.querySelector('.ea-submit-spinner');
+const successEl   = document.getElementById('ea-success');
 
-function hideToast() {
-  toast.classList.remove('is-visible');
-  toast.hidden = true;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function openModal() {
+  backdrop.hidden = false;
+  backdrop.removeAttribute('aria-hidden');
+  modal.showModal ? modal.showModal() : (modal.open = true);
+  document.body.style.overflow = 'hidden';
+  // Reset to form state
+  form.hidden = false;
+  successEl.hidden = true;
+  errorEl.hidden = true;
+  emailInput.value = '';
+  emailInput.setAttribute('aria-invalid', 'false');
+  // Focus the input on next frame
+  requestAnimationFrame(() => emailInput.focus());
 }
 
+function closeModal() {
+  modal.close ? modal.close() : (modal.open = false);
+  backdrop.hidden = true;
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.hidden = false;
+  emailInput.setAttribute('aria-invalid', 'true');
+  emailInput.focus();
+}
+
+function clearError() {
+  errorEl.hidden = true;
+  emailInput.setAttribute('aria-invalid', 'false');
+}
+
+function setLoading(loading) {
+  submitBtn.disabled = loading;
+  emailInput.disabled = loading;
+  submitLabel.hidden = loading;
+  spinner.hidden = !loading;
+  submitBtn.setAttribute('aria-busy', String(loading));
+}
+
+// Open on all early-access trigger buttons
 document.querySelectorAll('.js-early-access').forEach((btn) =>
-  btn.addEventListener('click', () => {
-    toast.hidden = false;
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(hideToast, 6000);
-  })
+  btn.addEventListener('click', openModal)
 );
 
-toastClose.addEventListener('click', () => {
-  window.clearTimeout(toastTimer);
-  hideToast();
+// Close on backdrop click
+backdrop.addEventListener('click', closeModal);
+
+// Close on Escape / native dialog close
+modal.addEventListener('close', () => {
+  backdrop.hidden = true;
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+});
+
+// Close button inside modal
+modal.querySelector('.ea-close').addEventListener('click', closeModal);
+successEl.querySelector('.ea-success-close').addEventListener('click', closeModal);
+
+// Inline validation on blur
+emailInput.addEventListener('blur', () => {
+  const val = emailInput.value.trim();
+  if (val && !EMAIL_RE.test(val)) {
+    showError('Please enter a valid email address.');
+  } else {
+    clearError();
+  }
+});
+
+// Form submission
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearError();
+
+  const email = emailInput.value.trim().toLowerCase();
+
+  if (!email) {
+    showError('Please enter your email address.');
+    return;
+  }
+  if (!EMAIL_RE.test(email)) {
+    showError('Please enter a valid email address.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.error || `Server error ${res.status}`);
+    }
+
+    // Show success
+    form.hidden = true;
+    successEl.hidden = false;
+    successEl.querySelector('.ea-success-close').focus();
+
+  } catch (err) {
+    showError(err.message || 'Something went wrong — please try again.');
+  } finally {
+    setLoading(false);
+  }
 });
 
 // ── Scroll reveal ─────────────────────────────────────────────
