@@ -3,7 +3,11 @@
 const DEFAULT_OPEN_EAR = 0.28; // conservative safe default pending per-session calibration
 const CLOSE_RATIO = 0.72;
 const REOPEN_RATIO = 0.82;
-const MIN_CLOSURE_MS = 80;
+// FPS-adaptive min closure: 80ms for >=25 fps (2-3 frames at 30fps);
+// 50ms for <25 fps (1 frame at 20fps) because at low temporal resolution
+// the only closed frame may be the entry sample itself.
+const HIGH_FPS_MIN_CLOSURE_MS = 80;
+const LOW_FPS_MIN_CLOSURE_MS = 50;
 // Adaptive stale-closure expiry: base threshold for >=30 FPS; scales proportionally
 // for low-FPS sensors (e.g. 3.67 FPS Android) where a sampled blink can legitimately
 // span 635–1270ms because the open event is detected 2–4 frame-intervals later.
@@ -26,9 +30,17 @@ const MIN_REOPEN_RATIO = 0.72;   // belt-and-suspenders floor on the acceptance 
 // the trace-derived post-drift reopens (EAR=0.224+).
 const POST_DRIFT_MIN_REOPEN_EAR = 0.22;
 const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
-// A genuine closure must achieve sufficient depth (min EAR <= 65% of open baseline),
-// rejecting shallow threshold oscillations/flutter (e.g. EAR 0.215/0.217 at baseline 0.30).
-const MAX_CLOSURE_DEPTH_RATIO = 0.65;
+// PAT-1170: When face re-acquires after a >2s dropout, use a shorter warmup
+// so the BPM gauge recovers faster instead of waiting the full 500ms.
+const FAST_RECOVERY_WARMUP_MS = 200;
+// PAT-1169: FPS-adaptive closure depth ratio. At >=25 fps the trough is well-sampled
+// and 0.65 rejects genuine flutter/shallow oscillations. At <25 fps (e.g. Android ~20fps)
+// the trough may fall between frames, giving minClosedEar ~0.31 at a 0.44 baseline (ratio 0.70).
+// Relaxing to 0.75 accepts these undersampled but genuine blinks while still rejecting
+// shallow threshold noise (EAR 0.26+ at baseline 0.33 → ratio 0.79 → rejected).
+const HIGH_FPS_MAX_CLOSURE_DEPTH_RATIO = 0.65;
+const LOW_FPS_MAX_CLOSURE_DEPTH_RATIO = 0.75;
+const LOW_FPS_THRESHOLD = 25; // fps boundary for low/normal adaptation
 
 export class BlinkStateMachine {
   constructor({ defaultOpenEar = DEFAULT_OPEN_EAR } = {}) {
@@ -49,6 +61,8 @@ export class BlinkStateMachine {
     this.stabilityFrames = []; // Track recent motion/yaw for stability gating
     this.lastProcessedTimestampMs = null; // For adaptive expiry based on observed FPS
     this.lastFrameIntervalMs = 0;         // Most recent inter-frame gap (ms)
+    // PAT-1170: one-shot flag — set by detector when face re-acquires after >2s drop
+    this.fastRecoveryMode = false;
   }
 
   resetTracking() {
@@ -64,6 +78,12 @@ export class BlinkStateMachine {
     this.lastClosureStartedAt = -Infinity; // reset so next blink can start immediately
     // lastFrameIntervalMs preserved: device FPS does not change on tracking reset.
     // initialBaseline NOT reset: it captures session-level warmup calibration.
+    // fastRecoveryMode NOT reset here — set/reset by enableFastRecovery() and the warmup block.
+  }
+
+  /** PAT-1170: Signal that face was lost >2s; use shorter warmup on next baseline init. */
+  enableFastRecovery() {
+    this.fastRecoveryMode = true;
   }
 
   isLandmarkStable() {
@@ -111,6 +131,26 @@ export class BlinkStateMachine {
   get closeThreshold() { return this.openBaseline * CLOSE_RATIO; }
   get reopenThreshold() { return this.openBaseline * REOPEN_RATIO; }
 
+  // PAT-1169: FPS estimation from observed inter-frame interval.
+  get estimatedFps() {
+    return this.lastFrameIntervalMs > 0 ? 1000 / this.lastFrameIntervalMs : 0;
+  }
+
+  // FPS-adaptive minimum closure: low-fps sensors may only catch 1 frame of a real blink.
+  get isLowFps() {
+    return this.estimatedFps > 0 && this.estimatedFps < LOW_FPS_THRESHOLD;
+  }
+
+  get effectiveMinClosureMs() {
+    return this.isLowFps ? LOW_FPS_MIN_CLOSURE_MS : HIGH_FPS_MIN_CLOSURE_MS;
+  }
+
+  // FPS-adaptive depth ratio: at low fps the EAR trough may fall between frames,
+  // so the sampled minEAR can be shallower than the true trough.
+  get effectiveMaxClosureDepthRatio() {
+    return this.isLowFps ? LOW_FPS_MAX_CLOSURE_DEPTH_RATIO : HIGH_FPS_MAX_CLOSURE_DEPTH_RATIO;
+  }
+
   record(list, event) {
     list.push(event);
     if (list.length > MAX_EVENTS) list.shift();
@@ -149,7 +189,9 @@ export class BlinkStateMachine {
     if (this.openBaseline === 0.0) {
       this.openBaseline = ear;
       this.initialBaseline = ear; // PAT-925: capture warmup-level baseline; never reset
-      this.warmupUntil = timestampMs + 500;
+      const warmupMs = this.fastRecoveryMode ? FAST_RECOVERY_WARMUP_MS : 500;
+      this.warmupUntil = timestampMs + warmupMs;
+      this.fastRecoveryMode = false; // one-shot — consumed
     }
 
     if (this.warmupUntil !== null) {
@@ -259,17 +301,28 @@ export class BlinkStateMachine {
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_unstable' };
       }
-      if (durationMs < MIN_CLOSURE_MS) {
+      if (durationMs < this.effectiveMinClosureMs) {
         const event = this.buildDiagnosticEvent('closure_too_short', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_short_closure' };
       }
       // Closure depth gate: rejects shallow threshold oscillations/flutter that never reached true closure depth.
       // Evaluated against closureEntryBaseline captured at closure start, so reopen adaptation cannot shift the verdict.
-      if (minClosedEar > MAX_CLOSURE_DEPTH_RATIO * closureEntryBaseline) {
+      if (minClosedEar > this.effectiveMaxClosureDepthRatio * closureEntryBaseline) {
         const event = this.buildDiagnosticEvent('shallow_closure', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, minClosedEar, closureEntryBaseline, entryStable: closureEntryStable } });
         this.record(this.rejectedEvents, event);
         return { blinked: false, decision: 'rejected_shallow_closure' };
+      }
+      // PAT-1169: Motion gating for long closures. At low FPS, a genuine blink is
+      // typically 100-350ms sampled duration. Closures >400ms with concurrent head
+      // motion are likely squints/looking-down rather than real blinks. The motion
+      // check uses CLOSURE_ENTRY_MOTION_THRESHOLD (same gate used on closure entry)
+      // but applied on reopen — if the head was moving during this long interval,
+      // the EAR dip was probably a squint or head-pose change, not a blink.
+      if (durationMs > 400 && motion > CLOSURE_ENTRY_MOTION_THRESHOLD) {
+        const event = this.buildDiagnosticEvent('long_closure_with_motion', this.state, { timestampMs, ear, motion, yawProxy, extra: { durationMs, entryStable: closureEntryStable } });
+        this.record(this.rejectedEvents, event);
+        return { blinked: false, decision: 'rejected_long_closure_motion' };
       }
       // PAT-1032: after legitimate adaptation, the adaptive threshold is the
       // authoritative floor, but the absolute partial-squeeze floor remains
@@ -301,6 +354,10 @@ export class BlinkStateMachine {
       initialBaseline: this.initialBaseline,
       closeThreshold: this.closeThreshold,
       reopenThreshold: this.reopenThreshold,
+      // PAT-1169: expose FPS estimate for cross-device diagnostics
+      estimatedFps: this.estimatedFps,
+      isLowFps: this.isLowFps,
+      lastFrameIntervalMs: this.lastFrameIntervalMs,
       acceptedEvents: [...this.acceptedEvents],
       rejectedEvents: [...this.rejectedEvents],
       landmarkStable: this.isLandmarkStable(),

@@ -39,8 +39,10 @@ export class BlinkTracker {
 
   async enableCamera(videoEl) {
     this.video = videoEl;
+    // PAT-1170: Cap resolution at 640x480 max so low-end webcams don't negotiate
+    // a higher resolution that strains USB bandwidth and causes face-tracking drops.
     this.stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      video: { facingMode: 'user', width: { ideal: 640, max: 640 }, height: { ideal: 480, max: 480 } },
       audio: false,
     });
     videoEl.srcObject = this.stream;

@@ -26,6 +26,9 @@ const MIN_REOPEN_RATIO = 0.72;   // belt-and-suspenders floor on the acceptance 
 // the trace-derived post-drift reopens (EAR=0.224+).
 const POST_DRIFT_MIN_REOPEN_EAR = 0.22;
 const MIN_ADAPT_EAR_RATIO = 0.80; // EWMA baseline only updates from 'open' frames above this
+// PAT-1170: When face re-acquires after a >2s dropout, use a shorter warmup
+// so the BPM gauge recovers faster instead of waiting the full 500ms.
+const FAST_RECOVERY_WARMUP_MS = 200;
 // A genuine closure must achieve sufficient depth (min EAR <= 65% of open baseline),
 // rejecting shallow threshold oscillations/flutter (e.g. EAR 0.215/0.217 at baseline 0.30).
 const MAX_CLOSURE_DEPTH_RATIO = 0.65;
@@ -49,6 +52,8 @@ export class BlinkStateMachine {
     this.stabilityFrames = []; // Track recent motion/yaw for stability gating
     this.lastProcessedTimestampMs = null; // For adaptive expiry based on observed FPS
     this.lastFrameIntervalMs = 0;         // Most recent inter-frame gap (ms)
+    // PAT-1170: one-shot flag — set by detector when face re-acquires after >2s drop
+    this.fastRecoveryMode = false;
   }
 
   resetTracking() {
@@ -64,6 +69,12 @@ export class BlinkStateMachine {
     this.lastClosureStartedAt = -Infinity; // reset so next blink can start immediately
     // lastFrameIntervalMs preserved: device FPS does not change on tracking reset.
     // initialBaseline NOT reset: it captures session-level warmup calibration.
+    // fastRecoveryMode NOT reset here — set/reset by enableFastRecovery() and the warmup block.
+  }
+
+  /** PAT-1170: Signal that face was lost >2s; use shorter warmup on next baseline init. */
+  enableFastRecovery() {
+    this.fastRecoveryMode = true;
   }
 
   isLandmarkStable() {
@@ -149,7 +160,9 @@ export class BlinkStateMachine {
     if (this.openBaseline === 0.0) {
       this.openBaseline = ear;
       this.initialBaseline = ear; // PAT-925: capture warmup-level baseline; never reset
-      this.warmupUntil = timestampMs + 500;
+      const warmupMs = this.fastRecoveryMode ? FAST_RECOVERY_WARMUP_MS : 500;
+      this.warmupUntil = timestampMs + warmupMs;
+      this.fastRecoveryMode = false; // one-shot — consumed
     }
 
     if (this.warmupUntil !== null) {

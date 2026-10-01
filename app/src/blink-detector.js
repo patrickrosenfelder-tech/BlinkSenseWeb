@@ -214,6 +214,11 @@ export class BlinkDetector {
       if (gapMs > this.longestFaceDropMs) this.longestFaceDropMs = gapMs;
       this.addTimelineEvent({ type: 'face_found_resume', timestampMs, gapMs });
       this.faceDropStartMs = null;
+      // PAT-1170: After a long face drop (>2s), use shorter warmup so the BPM
+      // gauge recovers faster instead of waiting the full 500ms.
+      if (gapMs > 2000) {
+        this.machine.enableFastRecovery();
+      }
     }
     this.consecutiveMisses = 0;
 

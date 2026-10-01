@@ -59,6 +59,9 @@ let lastZoneTickAt = null;
 let timerInterval = null;
 let bpmSamples = [];
 let lastBpmSampleAt = -Infinity;
+// PAT-1170: Track face-not-found duration so the BPM gauge can show a
+// stale-data indicator when the camera can't see a face (>3s).
+let faceLostSinceMs = null;
 // Hidden-tab (backgrounded window) accounting, so wall-clock time the tab
 // spent hidden — during which no blinks can be detected — is excluded from
 // both the live and session-average BPM denominators.
@@ -133,7 +136,12 @@ els.retryBtn.addEventListener('click', async () => {
 // ---------- Camera ----------
 
 async function acquireCamera() {
-  const constraints = { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+  // PAT-1170: Cap resolution at 640x480 max (not just ideal) so low-end webcams
+  // don't negotiate a higher resolution that strains the USB bandwidth and causes
+  // frame drops / face-tracking instability. The Surface trial showed 33.4/28.8 fps
+  // with 1064 face-not-found frames — capping resolution helps ensure the camera
+  // has enough USB bandwidth left for consistent frame delivery.
+  const constraints = { video: { facingMode: 'user', width: { ideal: 640, max: 640 }, height: { ideal: 480, max: 480 } }, audio: false };
   stream = await navigator.mediaDevices.getUserMedia(constraints);
   els.video.srcObject = stream;
   await els.video.play();
@@ -206,10 +214,21 @@ function zoneForBpm(bpm) {
   return ZONE.HEALTHY;
 }
 
-function updateGauge(bpm) {
-  const clamped = Math.max(0, Math.min(bpm, BPM_GAUGE_MAX));
-  els.gaugeFill.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE * (1 - clamped / BPM_GAUGE_MAX));
-  els.bpmValue.textContent = sessionStart ? String(Math.round(bpm)) : '--';
+function updateGauge(bpm, faceLostMs = 0) {
+  const isStale = faceLostMs > 3000;
+  if (isStale) {
+    // PAT-1170: Show "—" instead of a stale BPM number during long face drops.
+    els.bpmValue.textContent = '—';
+    els.bpmValue.classList.add('is-stale');
+    els.gaugeFill.classList.add('is-stale');
+    // Don't update the gauge fill — keep it at its last known position.
+  } else {
+    els.bpmValue.classList.remove('is-stale');
+    els.gaugeFill.classList.remove('is-stale');
+    const clamped = Math.max(0, Math.min(bpm, BPM_GAUGE_MAX));
+    els.gaugeFill.style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE * (1 - clamped / BPM_GAUGE_MAX));
+    els.bpmValue.textContent = sessionStart ? String(Math.round(bpm)) : '--';
+  }
 }
 
 function updateZone(bpm) {
@@ -237,9 +256,16 @@ function updateZone(bpm) {
 function tick(timestampMs) {
   rafId = requestAnimationFrame(tick);
   if (!els.video.videoWidth) return;
-  detector.detectFrame(els.video, timestampMs);
+  const result = detector.detectFrame(els.video, timestampMs);
+  // PAT-1170: Track face-not-found streaks so the gauge can show stale-data indicator.
+  if (result && !result.faceFound) {
+    if (faceLostSinceMs === null) faceLostSinceMs = timestampMs;
+  } else if (result && result.faceFound) {
+    faceLostSinceMs = null;
+  }
+  const faceLostMs = faceLostSinceMs !== null ? timestampMs - faceLostSinceMs : 0;
   const bpm = computeBpm();
-  updateGauge(bpm);
+  updateGauge(bpm, faceLostMs);
   updateZone(bpm);
 }
 
@@ -332,6 +358,7 @@ async function startMonitoring() {
   sessionStart = performance.now();
   accumulatedPauseMs = 0;
   hiddenSinceMs = document.hidden ? sessionStart : null;
+  faceLostSinceMs = null;  // PAT-1170: reset face-drop tracking on new session
   blinkTimestamps = [];
   blinkCount = 0;
   alertCount = 0;
