@@ -1,4 +1,7 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/imprint", "destination": "/privacy#controller", "permanent": true }
+  ]
 }

@@ -26,7 +26,7 @@ npm run preview
 ## Pages and static assets
 
 - `index.html` — landing page (`src/main.js`, `src/vision-demo.js`, `src/style.css`)
-- `privacy/index.html`, `imprint/index.html` — legal pages served at `/privacy` and `/imprint` (see `vite.config.js` and `vercel.json` for the multi-page build and clean URLs)
+- `privacy/index.html` — privacy policy and contact details, served at `/privacy` (see `vite.config.js` and `vercel.json` for the multi-page build and clean URLs; `/imprint` redirects there)
 - `public/` — favicons, web manifest, `robots.txt`, `sitemap.xml`, the Open Graph card (`og-image.jpg`), self-hosted DM Mono fonts, and web app screenshots
 
 The site has no forms, cookies, or analytics. Primary calls to action link to the web app and to the device test builds.

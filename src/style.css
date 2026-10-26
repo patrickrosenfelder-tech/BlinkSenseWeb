@@ -1351,7 +1351,7 @@ details p {
   .chip { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
 }
 
-/* ---------- Legal pages (/privacy, /imprint) ---------- */
+/* ---------- Legal pages (/privacy) ---------- */
 .legal-nav {
   display: flex;
   align-items: center;
