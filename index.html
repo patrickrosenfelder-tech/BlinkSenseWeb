@@ -5,10 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="BlinkSense is a privacy-first, on-device blink-rate monitor for focused screen work — real-time BPM, alert zones, session history, and Docked Mode on macOS, Windows, Android, and iOS." />
   <meta name="theme-color" content="#f5f7fa" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" />
   <title>BlinkSense — Real-time blink-rate awareness, on-device</title>
+  <link rel="canonical" href="https://www.blinksenseapp.com/" />
+
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="BlinkSense" />
+  <meta property="og:title" content="BlinkSense — Real-time blink-rate awareness, on-device" />
+  <meta property="og:description" content="Know your blink rate, not your data. BlinkSense tracks your blinks per minute while you work and nudges you when it drops — camera processed entirely on your device." />
+  <meta property="og:url" content="https://www.blinksenseapp.com/" />
+  <meta property="og:image" content="https://www.blinksenseapp.com/og-image.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="BlinkSense: Know your blink rate. Not your data. Shown next to a screenshot of the web app dashboard." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BlinkSense — Real-time blink-rate awareness, on-device" />
+  <meta name="twitter:description" content="Know your blink rate, not your data. Real-time blink-rate awareness with the camera processed entirely on your device." />
+  <meta name="twitter:image" content="https://www.blinksenseapp.com/og-image.jpg" />
+  <meta name="twitter:image:alt" content="BlinkSense: Know your blink rate. Not your data." />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "BlinkSense",
+    "description": "Privacy-first, on-device blink-rate awareness for focused screen work: real-time blinks per minute, alert zones, local session history, and Docked Mode.",
+    "url": "https://www.blinksenseapp.com/",
+    "image": "https://www.blinksenseapp.com/og-image.jpg",
+    "applicationCategory": "HealthApplication",
+    "applicationSubCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS, Windows, Android, iOS, Web browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
 </head>
 <body>
 
@@ -38,8 +76,7 @@
         <a class="nav-link" href="#device-test-builds">Downloads</a>
         <a class="nav-link" href="#vision-check-demo">Self-checks</a>
         <a class="nav-link" href="#faq">FAQ</a>
-        <a class="nav-link nav-link-app" href="https://blinksense-webapp.vercel.app">Web app</a>
-        <button class="btn btn-primary btn-sm js-early-access" type="button">Early access</button>
+        <a class="btn btn-primary btn-sm" href="https://blinksense-webapp.vercel.app">Try the web app</a>
       </nav>
     </div>
   </header>
@@ -51,7 +88,7 @@
     <section id="top" class="hero">
       <div class="shell hero-grid">
 
-        <div class="hero-copy reveal">
+        <div class="hero-copy">
           <p class="eyebrow">On-device blink tracking</p>
           <h1 class="display-1">
             Know your blink rate.<br />
@@ -59,16 +96,19 @@
           </h1>
           <p class="lead">BlinkSense watches your blink-per-minute rate in real time while you work, and gives you a gentle nudge when it drops into a low or critical zone — using the front camera you already have, processed entirely on-device.</p>
           <div class="hero-actions">
-            <button class="btn btn-primary js-early-access" type="button" aria-describedby="early-access-note">
-              Request early access
+            <a class="btn btn-primary" href="https://blinksense-webapp.vercel.app">
+              Try the web app
               <span aria-hidden="true">→</span>
-            </button>
-            <a class="text-link" href="#dashboard">See the dashboard <span aria-hidden="true">↓</span></a>
+            </a>
+            <a class="btn btn-ghost" href="#device-test-builds">
+              Download
+              <span aria-hidden="true">↓</span>
+            </a>
           </div>
-          <p class="fine-print" id="early-access-note">BlinkSense is an awareness tool, not a medical device. It does not diagnose, treat, cure, or prevent any condition.</p>
+          <p class="hero-note">BlinkSense is an awareness tool, not a medical device. It does not diagnose, treat, cure, or prevent any condition.</p>
         </div>
 
-        <div class="hero-visual reveal">
+        <div class="hero-visual">
           <div class="app-mock" id="dashboard" aria-label="BlinkSense live session dashboard, demo view">
             <div class="app-mock-titlebar" aria-hidden="true">
               <span class="tbar-dot tbar-dot-r"></span>
@@ -134,6 +174,36 @@
           <h2 class="display-2">Deep focus quietly drops your blink rate — and you won't notice until your eyes do.</h2>
           <p>Reading, coding, designing, and meetings on screen can cut blink rate well below its resting baseline. BlinkSense keeps a private, real-time readout of that rate so a drop is visible before it becomes discomfort.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- ── WEB APP SCREENSHOTS ── -->
+    <section id="web-app" class="section" aria-labelledby="web-app-title">
+      <div class="shell">
+        <div class="section-header reveal">
+          <p class="eyebrow">The real app</p>
+          <h2 class="display-2" id="web-app-title">The BlinkSense web app, <span class="accent-text">as it ships.</span></h2>
+          <p>Screenshots of the live web app before a session starts. The camera stays off until you press Start monitoring, and video never leaves the browser.</p>
+        </div>
+        <div class="shot-grid">
+          <figure class="shot shot-desktop reveal">
+            <picture>
+              <source type="image/avif" srcset="/images/webapp-desktop.avif" />
+              <img src="/images/webapp-desktop.webp" width="1200" height="1335" loading="lazy" decoding="async"
+                alt="BlinkSense web app on desktop: camera panel with a Start monitoring button, a live blink-rate gauge waiting for data, session stats, session type chips, and the Docked Mode switch." />
+            </picture>
+            <figcaption>Desktop — camera, live blink-rate gauge, session stats, session type, and Docked Mode.</figcaption>
+          </figure>
+          <figure class="shot shot-mobile reveal">
+            <picture>
+              <source type="image/avif" srcset="/images/webapp-mobile.avif" />
+              <img src="/images/webapp-mobile.webp" width="720" height="1473" loading="lazy" decoding="async"
+                alt="BlinkSense web app on a phone: on-device privacy notice, camera panel with Start monitoring, and the blink-rate gauge." />
+            </picture>
+            <figcaption>Phone — the same dashboard, sized for a docked phone.</figcaption>
+          </figure>
+        </div>
+        <a class="btn btn-primary" href="https://blinksense-webapp.vercel.app">Open the web app <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
@@ -251,13 +321,16 @@
         <div class="reveal">
           <p class="eyebrow">Private by design</p>
           <h2 class="display-2">Your face is not our product.</h2>
-          <p class="privacy-copy">All camera analysis runs locally on your device. No camera frames, facial data, or session video ever leave the device or get uploaded — verified in Settings and in the code itself.</p>
-          <a class="text-link" href="#faq">Read the privacy FAQ <span aria-hidden="true">→</span></a>
+          <p class="privacy-copy">All camera analysis runs locally on your device. No camera frames, facial data, or session video ever leave the device or get uploaded. The web app's tracker is open source — <a class="inline-link" href="https://github.com/patrickrosenfelder-tech/BlinkSenseWeb/tree/master/app/src">read its code on GitHub</a>.</p>
+          <div class="link-row">
+            <a class="text-link" href="/privacy">Read the privacy policy <span aria-hidden="true">→</span></a>
+            <a class="text-link" href="#faq">Privacy FAQ <span aria-hidden="true">→</span></a>
+          </div>
         </div>
         <div class="privacy-points reveal">
           <div class="privacy-point">
             <span class="privacy-check" aria-hidden="true">✓</span>
-            <p><strong>On-device processing</strong>Every frame is analyzed locally — there is no networking path in the tracker.</p>
+            <p><strong>On-device processing</strong>Every frame is analyzed locally — the tracker never sends camera frames anywhere.</p>
           </div>
           <div class="privacy-point">
             <span class="privacy-check" aria-hidden="true">✓</span>
@@ -314,7 +387,7 @@
         <div class="section-header reveal">
           <p class="eyebrow">Device validation pre-releases</p>
           <h2 class="display-2" id="downloads-title">Device <span class="accent-text">test builds</span></h2>
-          <p>Pre-releases for device validation only. Not medical devices. Builds are currently unsigned — expect a Gatekeeper or SmartScreen warning.</p>
+          <p>Pre-releases for device validation only. Not medical devices. Builds are not code-signed yet, so your system will warn you the first time — <a class="inline-link" href="#open-unsigned">here's how to open them</a>.</p>
         </div>
         <div class="download-grid">
           <article class="download-card reveal">
@@ -353,7 +426,42 @@
             </div>
           </article>
         </div>
-        <p class="verify-note reveal">Before installing, <a class="text-link" href="https://github.com/patrickrosenfelder-tech/BlinkSenseWeb/releases/download/device-test-20260907-r4/SHA256SUMS.txt">verify your download with SHA256 checksums <span aria-hidden="true">→</span></a>.</p>
+        <p class="verify-note reveal">Before installing, <a class="text-link" href="https://github.com/patrickrosenfelder-tech/BlinkSenseWeb/releases/download/device-test-20260907-r4/SHA256SUMS.txt">verify your download with SHA256 checksums <span aria-hidden="true">→</span></a> — run <code>shasum -a 256 &lt;file&gt;</code> on macOS or <code>Get-FileHash &lt;file&gt;</code> in Windows PowerShell and compare the result.</p>
+
+        <div class="unsigned-help reveal" id="open-unsigned" aria-labelledby="unsigned-title">
+          <h3 id="unsigned-title">Opening an unsigned test build</h3>
+          <p class="unsigned-intro">The test builds aren't signed with an Apple Developer ID or a Windows code-signing certificate yet, so your operating system can't confirm who made them. Only open files you downloaded from the links above, and check the checksum first.</p>
+          <div class="unsigned-grid">
+            <div class="unsigned-os">
+              <h4>macOS — Gatekeeper</h4>
+              <ol>
+                <li>Unzip the download and move BlinkSense to your Applications folder.</li>
+                <li>Open it once. When macOS says it can't verify the developer, click <strong>Done</strong>.</li>
+                <li>Open <strong>System Settings → Privacy &amp; Security</strong>, scroll to <em>Security</em>, and click <strong>Open Anyway</strong> next to the BlinkSense message.</li>
+                <li>Confirm with <strong>Open Anyway</strong> and your password. Later launches open normally.</li>
+              </ol>
+              <p class="unsigned-tip">On macOS 14 and earlier you can instead Control-click the app, choose <strong>Open</strong>, then <strong>Open</strong> again.</p>
+            </div>
+            <div class="unsigned-os">
+              <h4>Windows — SmartScreen</h4>
+              <ol>
+                <li>If your browser flags the download, choose <strong>Keep</strong> from its downloads menu.</li>
+                <li>Run the Setup (or Portable) <code>.exe</code>.</li>
+                <li>When “Windows protected your PC” appears, click <strong>More info</strong>.</li>
+                <li>Check the app name, then click <strong>Run anyway</strong>. The publisher will show as “Unknown publisher”.</li>
+              </ol>
+            </div>
+            <div class="unsigned-os">
+              <h4>Android — APK</h4>
+              <ol>
+                <li>Open the downloaded APK from your browser or Files app.</li>
+                <li>When asked, allow that app to <strong>Install unknown apps</strong> (Settings → Apps → Special app access).</li>
+                <li>If Google Play Protect warns about an unrecognised app, tap <strong>More details → Install anyway</strong>.</li>
+                <li>You can switch the unknown-apps permission off again afterwards.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -384,7 +492,7 @@
           </details>
           <details>
             <summary>Does BlinkSense record me?<span class="summary-icon" aria-hidden="true">+</span></summary>
-            <p>No. All camera analysis happens locally on-device. No camera frames, facial data, or session video ever leave the device or get uploaded — there is no networking path in the tracker.</p>
+            <p>No. All camera analysis happens locally on-device. No camera frames, facial data, or session video ever leave the device or get uploaded, and session history is stored only on your device. The <a class="inline-link" href="/privacy">privacy policy</a> lists exactly what is processed where.</p>
           </details>
           <details>
             <summary>What is Docked Mode?<span class="summary-icon" aria-hidden="true">+</span></summary>
@@ -407,11 +515,15 @@
       <div class="shell cta-inner reveal">
         <p class="eyebrow">A calmer screen day starts here</p>
         <h2>Make room for the<br /><em>little things.</em></h2>
-        <p class="lead">Join the first to hear when BlinkSense is ready for your desk.</p>
-        <button class="btn btn-white js-early-access" type="button" aria-describedby="cta-note">
-          Request early access <span aria-hidden="true">→</span>
-        </button>
-        <p class="cta-note" id="cta-note">No signup is active yet. This button won't collect or send any data.</p>
+        <p class="lead">Start tracking in your browser in seconds, or download a test build for your Mac, PC, or Android phone.</p>
+        <div class="cta-actions">
+          <a class="btn btn-white" href="https://blinksense-webapp.vercel.app">
+            Try the web app <span aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-outline-white" href="#device-test-builds">
+            Download <span aria-hidden="true">↓</span>
+          </a>
+        </div>
       </div>
     </section>
 
@@ -427,22 +539,16 @@
         </svg>
         <span class="brand-name">Blink<em>Sense</em></span>
       </a>
-      <div class="footer-links">
-        <a href="#privacy">Privacy</a>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/privacy">Privacy</a>
+        <a href="/imprint">Imprint</a>
+        <a href="/imprint#contact">Contact</a>
         <a href="#faq">FAQ</a>
-        <button class="footer-btn js-early-access" type="button">Early access</button>
-      </div>
+      </nav>
       <p class="footer-desc">Real-time, on-device blink-rate awareness for focused screen work.</p>
       <small class="footer-copy">© <span id="year"></span> BlinkSense. Awareness, not medical advice.</small>
     </div>
   </footer>
-
-  <!-- Toast -->
-  <div class="toast" role="status" aria-live="polite" aria-atomic="true" hidden>
-    <button class="toast-close" type="button" aria-label="Close">×</button>
-    <strong>Early access is not open yet.</strong>
-    <span>We haven't enabled collection, so no information was requested or sent.</span>
-  </div>
 
   <script type="module" src="/src/main.js"></script>
   <script type="module">

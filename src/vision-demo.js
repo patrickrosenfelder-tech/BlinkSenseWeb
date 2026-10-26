@@ -12,7 +12,7 @@ const VCD_TESTS = {
   fadingText: { label: 'Fading Text', blurb: 'Read the text as it gets lighter. Tap when you can no longer read it.' },
   gridVisibility: { label: 'Grid Visibility', blurb: 'Tap any areas of the grid that appear faded or missing.' },
   hueArrangement: { label: 'Hue Arrangement', blurb: 'Arrange the colors in order of their hue gradient.' },
-  ishihara: { label: 'Ishihara Plates', blurb: 'Enter the number you see in the dotted circle.' },
+  colorPlates: { label: 'Color Plates', blurb: 'Pick the number hidden in the dotted circle. The dot plate is generated in your browser.' },
   colorSorting: { label: 'Color Sorting Game', blurb: 'Sort the colors from darkest to lightest.' },
   colorMatching: { label: 'Color Matching', blurb: 'Adjust the slider to match the target color.' },
   snellen: { label: 'Mobile Snellen Chart', blurb: 'Hold your phone at arm\'s length and read the letters.' },
@@ -30,7 +30,7 @@ const VCD_TESTS = {
   movingTarget: { label: 'Moving Target Tracking', blurb: 'Track the moving object and tap it.' },
   rapidTap: { label: 'Rapid Tap Targets', blurb: 'Tap the targets as quickly as they appear.' },
   wordRecognition: { label: 'Word Flankers', blurb: 'Recognize the word despite distracting flankers.' },
-  dyslexiaScreening: { label: 'Dyslexia Screening', blurb: 'Identify the correctly oriented letters/words.' },
+  readingComfort: { label: 'Reading Comfort', blurb: 'Pick the correctly oriented letter. A quick reading-comfort activity, not a screening.' },
   eyeTraining: { label: 'Focus Flexibility', blurb: 'Follow the instructions to shift your focus.' },
   colorSensitivity: { label: 'Color Sensitivity', blurb: 'Identify subtle color changes.' },
 
@@ -136,7 +136,7 @@ function ringGapStage(root) {
       const ok = closest === gap;
       if (ok) score++;
       feedback.dataset.done = '1';
-      feedback.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
+      feedback.style.color = ok ? 'var(--healthy-text)' : 'var(--critical-text)';
       feedback.textContent = ok ? `Correct! (${score}/${round} so far)` : `Not quite — that gap pointed ${gap}°.`;
       const next = document.createElement('button');
       next.className = 'btn btn-primary btn-sm';
@@ -190,7 +190,7 @@ function contrastStage(root) {
         const ok = (i === 0 && which === 0) || (i === 1 && which === 1);
         if (ok) score++;
         fb.dataset.done = '1';
-        fb.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
+        fb.style.color = ok ? 'var(--healthy-text)' : 'var(--critical-text)';
         fb.textContent = ok ? 'Correct' : `Not quite — square ${which === 0 ? 'A (left)' : 'B (right)'} was darker.`;
         const nx = document.createElement('button');
         nx.className = 'btn btn-primary btn-sm';
@@ -309,7 +309,7 @@ function tumblingEStage(root) {
         const ok = key === dir;
         if (ok) score++;
         fb.dataset.done = '1';
-        fb.style.color = ok ? 'var(--healthy)' : 'var(--critical)';
+        fb.style.color = ok ? 'var(--healthy-text)' : 'var(--critical-text)';
         fb.textContent = ok ? 'Correct' : `Not quite — it faced ${dir}.`;
         const nx = document.createElement('button');
         nx.className = 'btn btn-primary btn-sm';
@@ -495,7 +495,7 @@ function hueArrangementStage(root) {
   wrap.appendChild(row);
   root.appendChild(wrap);
 }
-function ishiharaStage(root) {
+function colorPlatesStage(root) {
   root.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'vcd-test';
@@ -531,7 +531,7 @@ function ishiharaStage(root) {
     const btn = document.createElement('button');
     btn.className = 'btn btn-ghost btn-sm';
     btn.textContent = opt;
-    btn.addEventListener('click', () => showResult(wrap, opt === '8' ? 'PASS' : 'SCORE', opt === '8' ? 'PASS' : 'SCORE', 'Color vision check.', () => ishiharaStage(root), opt !== '8'));
+    btn.addEventListener('click', () => showResult(wrap, opt === '8' ? 'PASS' : 'SCORE', opt === '8' ? 'PASS' : 'SCORE', 'Color vision check.', () => colorPlatesStage(root), opt !== '8'));
     row.appendChild(btn);
   });
   wrap.appendChild(row);
@@ -1120,7 +1120,7 @@ function wordRecognitionStage(root) {
   wrap.appendChild(row);
   root.appendChild(wrap);
 }
-function dyslexiaScreeningStage(root) {
+function readingComfortStage(root) {
   root.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'vcd-test';
@@ -1145,7 +1145,7 @@ function dyslexiaScreeningStage(root) {
     const btn = document.createElement('button');
     btn.className = 'btn btn-ghost btn-sm';
     btn.textContent = opt;
-    btn.addEventListener('click', () => showResult(wrap, opt === 'd' ? 'PASS' : 'SCORE', opt === 'd' ? 'PASS' : 'SCORE', 'Symbol orientation check.', () => dyslexiaScreeningStage(root), opt !== 'd'));
+    btn.addEventListener('click', () => showResult(wrap, opt === 'd' ? 'PASS' : 'SCORE', opt === 'd' ? 'PASS' : 'SCORE', 'Symbol orientation check.', () => readingComfortStage(root), opt !== 'd'));
     row.appendChild(btn);
   });
   wrap.appendChild(row);
@@ -1212,35 +1212,8 @@ function colorSensitivityStage(root) {
   root.appendChild(wrap);
 }
 
-function simpleTest(root, title, question, options, correct, detail, restartFunc) {
-  root.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'vcd-test';
-  
-  const head = document.createElement('p');
-  head.className = 'vcd-hint';
-  head.innerHTML = title + ': ' + question;
-  wrap.appendChild(head);
-  
-  const row = document.createElement('div');
-  row.className = 'vcd-swatch-row';
-  
-  options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-ghost btn-sm';
-    btn.textContent = opt;
-    btn.addEventListener('click', () => {
-      showResult(wrap, opt === correct ? 'PASS' : 'SCORE', opt === correct ? 'PASS' : 'SCORE', detail, () => restartFunc(root), opt !== correct);
-    });
-    row.appendChild(btn);
-  });
-  
-  wrap.appendChild(row);
-  root.appendChild(wrap);
-}
-
 // ---------- shared result ----------
-function showResult(host, verdict, status, detail, restart, warnColor) {
+function showResult(host, verdict, status, detail, restart, _warnColor) {
   host.innerHTML = '';
   const box = document.createElement('div');
   box.className = 'vcd-result';
@@ -1250,7 +1223,6 @@ function showResult(host, verdict, status, detail, restart, warnColor) {
   const s = document.createElement('div');
   s.className = 'vcd-status ' + (status === 'PASS' ? 'ok' : 'warn');
   s.textContent = status;
-  if (warnColor) s.style.color = 'var(--low)';
   const d = document.createElement('p');
   d.textContent = detail;
   const r = document.createElement('button');
@@ -1283,7 +1255,7 @@ export function bootVisionDemo(root) {
       area.className = 'vcd-area';
       root.appendChild(area);
       ({ ringgap: ringGapStage, contrast: contrastStage, amsler: amslerStage, tumblingE: tumblingEStage,
-dominantEye: dominantEyeStage, colorDiscrimination: colorDiscriminationStage, fadingText: fadingTextStage, gridVisibility: gridVisibilityStage, hueArrangement: hueArrangementStage, ishihara: ishiharaStage, colorSorting: colorSortingStage, colorMatching: colorMatchingStage, snellen: snellenStage, letterIsolation: letterIsolationStage, blurryText: blurryTextStage, astigmatismWheel: astigmatismWheelStage, blurryClear: blurryClearStage, nearFar: nearFarStage, threeDDot: threeDDotStage, overlappingShapes: overlappingShapesStage, shadowDepth: shadowDepthStage, glareSensitivity: glareSensitivityStage, brightnessTolerance: brightnessToleranceStage, peripheralVision: peripheralVisionStage, movingTarget: movingTargetStage, rapidTap: rapidTapStage, wordRecognition: wordRecognitionStage, dyslexiaScreening: dyslexiaScreeningStage, eyeTraining: eyeTrainingStage, colorSensitivity: colorSensitivityStage })[key](area);
+dominantEye: dominantEyeStage, colorDiscrimination: colorDiscriminationStage, fadingText: fadingTextStage, gridVisibility: gridVisibilityStage, hueArrangement: hueArrangementStage, colorPlates: colorPlatesStage, colorSorting: colorSortingStage, colorMatching: colorMatchingStage, snellen: snellenStage, letterIsolation: letterIsolationStage, blurryText: blurryTextStage, astigmatismWheel: astigmatismWheelStage, blurryClear: blurryClearStage, nearFar: nearFarStage, threeDDot: threeDDotStage, overlappingShapes: overlappingShapesStage, shadowDepth: shadowDepthStage, glareSensitivity: glareSensitivityStage, brightnessTolerance: brightnessToleranceStage, peripheralVision: peripheralVisionStage, movingTarget: movingTargetStage, rapidTap: rapidTapStage, wordRecognition: wordRecognitionStage, readingComfort: readingComfortStage, eyeTraining: eyeTrainingStage, colorSensitivity: colorSensitivityStage })[key](area);
     });
     nav.appendChild(b);
   });

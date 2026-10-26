@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="How BlinkSense handles your data: camera frames are processed on your device and never uploaded, session history stays local, and this website uses no cookies or analytics." />
+  <meta name="theme-color" content="#f5f7fa" />
+  <title>Privacy policy — BlinkSense</title>
+  <link rel="canonical" href="https://www.blinksenseapp.com/privacy" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="BlinkSense" />
+  <meta property="og:title" content="Privacy policy — BlinkSense" />
+  <meta property="og:description" content="Camera frames are processed on your device and never uploaded. Session history stays local. No cookies, no analytics." />
+  <meta property="og:url" content="https://www.blinksenseapp.com/privacy" />
+  <meta property="og:image" content="https://www.blinksenseapp.com/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="/" aria-label="BlinkSense home">
+        <svg class="brand-icon" aria-hidden="true" viewBox="0 0 34 34" fill="none">
+          <path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/>
+          <circle cx="17" cy="17" r="3.4" fill="currentColor"/>
+        </svg>
+        <span class="brand-name">Blink<em>Sense</em></span>
+      </a>
+      <nav class="legal-nav" aria-label="Primary navigation">
+        <a class="nav-link nav-home" href="/">Home</a>
+        <a class="btn btn-primary btn-sm" href="https://blinksense-webapp.vercel.app">Try the web app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="legal-main">
+    <article class="shell legal">
+      <p class="eyebrow">Legal</p>
+      <h1 class="display-2">Privacy policy</h1>
+      <p class="legal-meta">Last updated: 26 October 2026</p>
+
+      <div class="legal-summary">
+        <p><strong>The short version</strong></p>
+        <ul>
+          <li>Camera frames are analysed on your device. They are never uploaded, recorded, or stored remotely.</li>
+          <li>Session history (blink-rate summaries) is stored only on your device.</li>
+          <li>This website sets no cookies and uses no analytics, ads, or tracking pixels.</li>
+          <li>Like any website, our hosting provider processes basic request data (such as your IP address) to deliver pages.</li>
+        </ul>
+      </div>
+
+      <h2 id="controller">1. Who is responsible</h2>
+      <p>The controller responsible for data processing on this website and in the BlinkSense apps is the operator named in the <a href="/imprint">imprint</a>. You can reach us using the contact details given there.</p>
+
+      <h2 id="website">2. This website (www.blinksenseapp.com)</h2>
+      <h3>Hosting and server logs</h3>
+      <p>This website is hosted by Vercel Inc. (440 N Barranca Ave #4133, Covina, CA 91723, USA). When you open a page, your browser sends technical request data to Vercel's servers: your IP address, the date and time, the requested URL, the referring page, and your browser's user agent. Vercel processes this data to deliver the site, protect it against abuse, and keep it running, and keeps it in short-lived logs. The legal basis is our legitimate interest in operating a secure website (Art. 6(1)(f) GDPR). Vercel may process data in the USA; transfers are covered by the EU–US Data Privacy Framework and/or standard contractual clauses. See <a href="https://vercel.com/legal/privacy-policy">Vercel's privacy policy</a>.</p>
+
+      <h3>No cookies, analytics, or third-party embeds</h3>
+      <p>This website does not set cookies, does not use analytics or advertising tools, and does not embed third-party content. Fonts and images are served from our own domain, so no request is made to Google Fonts or similar services.</p>
+
+      <h3>In-page vision self-checks</h3>
+      <p>The self-check activities on the home page run entirely in your browser. They do not use the camera, and your answers are not stored or sent anywhere — reloading the page clears them.</p>
+
+      <h3>Downloads from GitHub</h3>
+      <p>Device test builds and checksums are hosted on GitHub Releases. When you click a download link, your browser connects to GitHub (GitHub, Inc., USA), which receives your IP address and request data under the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a>. We do not receive information about who downloads a build.</p>
+
+      <h3>Links to other sites</h3>
+      <p>Links to other websites (for example the web app or GitHub) are ordinary links. The respective operator is responsible for data processing on those sites.</p>
+
+      <h2 id="web-app">3. The BlinkSense web app</h2>
+      <p>The web app at <a href="https://blinksense-webapp.vercel.app">blinksense-webapp.vercel.app</a> is also hosted by Vercel; the hosting and server-log information above applies to it as well.</p>
+      <ul>
+        <li><strong>Camera.</strong> The app asks for camera access only after you press <em>Start monitoring</em>. Video frames are processed in your browser's memory to estimate eye openness and count blinks. Frames, images, and face landmarks are never uploaded, recorded, or stored.</li>
+        <li><strong>On-device model files.</strong> When the app starts, your browser downloads the face-landmark model from Google (storage.googleapis.com) and the MediaPipe runtime from the jsDelivr CDN (cdn.jsdelivr.net). Like any web request, these providers receive your IP address and user agent. No camera data is sent with these requests.</li>
+        <li><strong>Session history.</strong> When a session ends, a summary — start time, duration, session type, average blink rate, blink count, alert count, and time in each zone — is saved in your browser's IndexedDB. It never leaves your device. Use <em>Clear history</em> in the app or clear the site's data in your browser to delete it.</li>
+        <li><strong>Private diagnostics.</strong> Camera settings and numeric detector values (no video, no landmarks) are kept in your browser's local storage so you can export them as a JSON file on your device.</li>
+        <li><strong>Offline support.</strong> The app may install a service worker that caches its own files in your browser so it loads faster and works offline.</li>
+      </ul>
+      <p>The web app's tracker is open source. You can read its code in our <a href="https://github.com/patrickrosenfelder-tech/BlinkSenseWeb/tree/master/app/src">public GitHub repository</a>.</p>
+
+      <h2 id="apps">4. Device apps (macOS, Windows, Android, iOS)</h2>
+      <p>The device test builds use the front camera in the same way: frames are analysed on the device and are not uploaded or stored. Session history and, on macOS, performance diagnostics are stored locally on your device and exported only to files you choose.</p>
+
+      <h2 id="contact">5. When you contact us</h2>
+      <p>If you email us, we process your email address and the content of your message to answer your request (Art. 6(1)(b) or (f) GDPR). We delete the correspondence once it is no longer needed, unless we are legally required to keep it.</p>
+
+      <h2 id="rights">6. Your rights</h2>
+      <p>Under the GDPR you have the right to access, rectification, erasure, restriction of processing, data portability, and to object to processing based on legitimate interests. Because BlinkSense keeps camera data and session history on your device, you can delete that data yourself at any time. To exercise your rights regarding data we process, contact us using the details in the <a href="/imprint">imprint</a>.</p>
+      <p>You also have the right to lodge a complaint with a data protection supervisory authority — in Austria, the Datenschutzbehörde (<a href="https://www.dsb.gv.at">dsb.gv.at</a>) — or with the authority in your own EU country.</p>
+
+      <h2 id="medical">7. Not a medical device</h2>
+      <p>BlinkSense is an awareness tool. It does not diagnose, treat, cure, or prevent any medical condition, and we do not use your data for medical purposes.</p>
+
+      <h2 id="changes">8. Changes</h2>
+      <p>We will update this policy when BlinkSense changes how it handles data. The date at the top shows the latest version.</p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <a class="brand" href="/" aria-label="BlinkSense home">
+        <svg class="brand-icon" aria-hidden="true" viewBox="0 0 34 34" fill="none">
+          <path d="M5.25 17c3.45-5.25 7.35-7.88 11.75-7.88S25.3 11.75 28.75 17c-3.45 5.25-7.37 7.88-11.75 7.88S8.7 22.25 5.25 17Z" stroke="currentColor" stroke-width="2.5"/>
+          <circle cx="17" cy="17" r="3.4" fill="currentColor"/>
+        </svg>
+        <span class="brand-name">Blink<em>Sense</em></span>
+      </a>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/privacy" aria-current="page">Privacy</a>
+        <a href="/imprint">Imprint</a>
+        <a href="/imprint#contact">Contact</a>
+        <a href="/#faq">FAQ</a>
+      </nav>
+      <p class="footer-desc">Real-time, on-device blink-rate awareness for focused screen work.</p>
+      <small class="footer-copy">© <span id="year">2026</span> BlinkSense. Awareness, not medical advice.</small>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/legal.js"></script>
+</body>
+</html>

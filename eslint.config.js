@@ -2,7 +2,7 @@ import js from '@eslint/js';
 
 export default [
   {
-    ignores: ['dist/**', 'app/dist/**', 'app/src/**', 'app/test/**']
+    ignores: ['dist/**', 'app/dist/**', 'app/src/**', 'app/test/**', 'assessment/**']
   },
   js.configs.recommended,
   {
@@ -16,7 +16,8 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
-        requestAnimationFrame: 'readonly'
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly'
       }
     },
     rules: {

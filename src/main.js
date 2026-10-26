@@ -20,34 +20,12 @@ primaryNav.querySelectorAll('a').forEach((link) =>
   })
 );
 
-// ── Toast ─────────────────────────────────────────────────────
-const toast      = document.querySelector('.toast');
-const toastClose = document.querySelector('.toast-close');
-let toastTimer;
-
-function hideToast() {
-  toast.classList.remove('is-visible');
-  toast.hidden = true;
-}
-
-document.querySelectorAll('.js-early-access').forEach((btn) =>
-  btn.addEventListener('click', () => {
-    toast.hidden = false;
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(hideToast, 6000);
-  })
-);
-
-toastClose.addEventListener('click', () => {
-  window.clearTimeout(toastTimer);
-  hideToast();
-});
-
-// ── Scroll reveal ─────────────────────────────────────────────
+// ── Scroll reveal (progressive enhancement) ───────────────────
+// Content is visible by default. Only elements that start below the fold
+// are hidden and faded in, so nothing on the first screen ever waits on JS.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-if (!reducedMotion) {
+if (!reducedMotion && 'IntersectionObserver' in window) {
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((e) => {
@@ -57,11 +35,14 @@ if (!reducedMotion) {
         }
       });
     },
-    { threshold: 0.1 }
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
   );
-  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
-} else {
-  document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+  const fold = window.innerHeight;
+  document.querySelectorAll('.reveal').forEach((el) => {
+    if (el.getBoundingClientRect().top < fold) return;
+    el.classList.add('reveal-pending');
+    observer.observe(el);
+  });
 }
 
 // ── Live dashboard demo ───────────────────────────────────────

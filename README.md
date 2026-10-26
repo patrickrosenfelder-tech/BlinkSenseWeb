@@ -23,6 +23,10 @@ npm run preview
 
 `npm run build` writes deployable static files to `dist/`. Upload that directory to any static host (for example, Netlify, Vercel static hosting, Cloudflare Pages, or an object-storage/CDN setup). No site has been published or configured by this repository.
 
-## Privacy and early access behavior
+## Pages and static assets
 
-The early-access controls are intentionally not connected to a form, analytics provider, or endpoint. They display an in-page message saying that enrollment is not active, so no data is collected or sent. Configure a consent-appropriate collection workflow before changing this behavior.
+- `index.html` — landing page (`src/main.js`, `src/vision-demo.js`, `src/style.css`)
+- `privacy/index.html`, `imprint/index.html` — legal pages served at `/privacy` and `/imprint` (see `vite.config.js` and `vercel.json` for the multi-page build and clean URLs)
+- `public/` — favicons, web manifest, `robots.txt`, `sitemap.xml`, the Open Graph card (`og-image.jpg`), self-hosted DM Mono fonts, and web app screenshots
+
+The site has no forms, cookies, or analytics. Primary calls to action link to the web app and to the device test builds.
